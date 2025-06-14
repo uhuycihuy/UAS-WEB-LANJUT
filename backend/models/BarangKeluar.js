@@ -1,6 +1,7 @@
 import { Sequelize } from "sequelize";
 import db from "../config/Database.js";
-import Barang from "./Barang.js";
+// Hapus import Barang untuk menghindari circular dependency
+// import Barang from "./Barang.js";
 
 const { DataTypes } = Sequelize;
 
@@ -14,7 +15,7 @@ const BarangKeluar = db.define("barang_keluar", {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: Barang,
+      model: "barang", // Gunakan nama tabel sebagai string
       key: "id",
     },
   },
@@ -31,6 +32,7 @@ const BarangKeluar = db.define("barang_keluar", {
   timestamps: false,
 });
 
-BarangKeluar.belongsTo(Barang, { foreignKey: "barang_id" });
+// Pindahkan association ke file terpisah atau ke index.js
+// BarangKeluar.belongsTo(Barang, { foreignKey: "barang_id" });
 
 export default BarangKeluar;

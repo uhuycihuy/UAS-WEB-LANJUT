@@ -2,7 +2,7 @@ import {Sequelize} from "sequelize";
 
 const db = new Sequelize('inventory_laptop', 'root', '', {
   host: 'localhost',
-  dialect: 'mysql',
+  dialect: 'mysql', 
   port: 3306,
   timezone: '+07:00',
   logging: false,

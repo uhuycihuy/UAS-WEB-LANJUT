@@ -6,7 +6,8 @@ const allowedIps = process.env.IP_YG_BOLEH
   : [];
 
 export const checkIpWhitelist = (req, res, next) => {
-  const clientIp = req.ip || req.connection.remoteAddress;
+  const clientIp = (req.ip || req.connection.remoteAddress).replace("::ffff:", "");
+  console.log("Detected client IP:", clientIp);
 
   if (!allowedIps.includes(clientIp)) {
     return res.status(403).json({ message: '⚠️ IP tidak diizinkan' });

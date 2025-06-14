@@ -1,5 +1,7 @@
 import { Sequelize } from "sequelize";
 import db from "../config/Database.js";
+import BarangKeluar from "./BarangKeluar.js";
+import BarangMasuk from "./BarangMasuk.js";
 
 const { DataTypes } = Sequelize;
 
@@ -39,7 +41,7 @@ const Barang = db.define('barang', {
   timestamps: false
 });
 
-Barang.hasMany(db.models.barang_masuk, { foreignKey: "barang_id" });
-Barang.hasMany(db.models.barang_keluar, { foreignKey: "barang_id" });
+Barang.hasMany(BarangMasuk, { foreignKey: "barang_id" });
+Barang.hasMany(BarangKeluar, { foreignKey: "barang_id" });
 
 export default Barang;
