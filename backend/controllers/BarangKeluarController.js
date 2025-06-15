@@ -30,6 +30,16 @@ export const getAllBarangKeluar = async (req, res) => {
         const includeClause = {
             model: Barang,
             as: 'barang',
+            where: {
+                is_deleted: false,
+                ...(search && {
+                    [Op.or]: [
+                        { nama_barang: { [Op.like]: `%${search}%` } },
+                        { kode_barang: { [Op.like]: `%${search}%` } }
+                    ]
+                })
+            },
+            required: true,
             attributes: ['kode_barang', 'nama_barang', 'satuan', 'batas_maksimal']
         };
 
@@ -82,6 +92,16 @@ export const getBarangKeluarById = async (req, res) => {
             include: [{
                 model: Barang,
                 as: 'barang',
+                where: {
+                    is_deleted: false,
+                    ...(search && {
+                        [Op.or]: [
+                            { nama_barang: { [Op.like]: `%${search}%` } },
+                            { kode_barang: { [Op.like]: `%${search}%` } }
+                        ]
+                    })
+                },
+                required: true,
                 attributes: ['kode_barang', 'nama_barang', 'satuan', 'stok', 'batas_maksimal']
             }]
         });
@@ -106,12 +126,11 @@ export const getBarangKeluarById = async (req, res) => {
         });
     }
 };
-
 // POST /api/barang-keluar - Catat barang keluar baru
 export const createBarangKeluar = async (req, res) => {
     try {
-        const { barang_id, jumlah, tanggal } = req.body;
-
+        const { barang_id, jumlah } = req.body; // Hapus tanggal dari destructuring
+        
         // Validasi input
         if (!barang_id || !jumlah) {
             return res.status(400).json({
@@ -119,23 +138,28 @@ export const createBarangKeluar = async (req, res) => {
                 message: "Barang ID dan jumlah wajib diisi"
             });
         }
-
+        
         if (jumlah <= 0) {
             return res.status(400).json({
                 success: false,
                 message: "Jumlah harus lebih dari 0"
             });
         }
-
+        
         // Cek apakah barang ada
-        const barang = await Barang.findByPk(barang_id);
+        const barang = await Barang.findOne({
+            where: {
+                id: barang_id,
+                is_deleted: false
+            }
+        });
         if (!barang) {
             return res.status(404).json({
                 success: false,
-                message: "Barang tidak ditemukan"
+                message: "Barang tidak ditemukan atau sudah dihapus"
             });
         }
-
+        
         // Cek apakah stok mencukupi
         if (barang.stok < parseInt(jumlah)) {
             return res.status(400).json({
@@ -143,21 +167,24 @@ export const createBarangKeluar = async (req, res) => {
                 message: `Stok tidak mencukupi. Stok tersedia: ${barang.stok}`
             });
         }
-
-        // Set tanggal ke hari ini jika tidak disediakan
-        const tanggalKeluar = tanggal ? new Date(tanggal) : new Date();
-
+        
+        // Set tanggal ke hari ini secara otomatis
+        const tanggalKeluar = new Date();
+        
+        // Format tanggal untuk timezone Indonesia (WIB)
+        const tanggalKeluarWIB = new Date(tanggalKeluar.getTime() + (7 * 60 * 60 * 1000));
+        
         // Buat transaksi barang keluar
         const barangKeluar = await BarangKeluar.create({
             barang_id: parseInt(barang_id),
             jumlah: parseInt(jumlah),
-            tanggal: tanggalKeluar
+            tanggal: tanggalKeluarWIB
         });
-
+        
         // Update stok barang
         const stokBaru = barang.stok - parseInt(jumlah);
         await barang.update({ stok: stokBaru });
-
+        
         // Ambil data lengkap untuk response
         const barangKeluarLengkap = await BarangKeluar.findByPk(barangKeluar.id, {
             include: [{
@@ -166,12 +193,25 @@ export const createBarangKeluar = async (req, res) => {
                 attributes: ['kode_barang', 'nama_barang', 'satuan', 'stok', 'batas_maksimal']
             }]
         });
-
+        
         res.status(201).json({
             success: true,
             message: "Barang keluar berhasil dicatat",
-            data: barangKeluarLengkap
+            data: {
+                ...barangKeluarLengkap.toJSON(),
+                tanggal_formatted: tanggalKeluarWIB.toISOString().split('T')[0], // Format: YYYY-MM-DD
+                waktu_dicatat: tanggalKeluarWIB.toLocaleString('id-ID', {
+                    timeZone: 'Asia/Jakarta',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                })
+            }
         });
+        
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -182,119 +222,119 @@ export const createBarangKeluar = async (req, res) => {
 };
 
 // PUT /api/barang-keluar/:id - Update transaksi barang keluar
-export const updateBarangKeluar = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { jumlah, tanggal } = req.body;
+// export const updateBarangKeluar = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const { jumlah, tanggal } = req.body;
 
-        // Cari transaksi barang keluar
-        const barangKeluar = await BarangKeluar.findByPk(id, {
-            include: [{
-                model: Barang,
-                as: 'barang'
-            }]
-        });
+//         // Cari transaksi barang keluar
+//         const barangKeluar = await BarangKeluar.findByPk(id, {
+//             include: [{
+//                 model: Barang,
+//                 as: 'barang'
+//             }]
+//         });
 
-        if (!barangKeluar) {
-            return res.status(404).json({
-                success: false,
-                message: "Data barang keluar tidak ditemukan"
-            });
-        }
+//         if (!barangKeluar) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Data barang keluar tidak ditemukan"
+//             });
+//         }
 
-        // Validasi jumlah jika diubah
-        if (jumlah !== undefined && jumlah <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Jumlah harus lebih dari 0"
-            });
-        }
+//         // Validasi jumlah jika diubah
+//         if (jumlah !== undefined && jumlah <= 0) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Jumlah harus lebih dari 0"
+//             });
+//         }
 
-        // Jika jumlah diubah, update stok barang
-        if (jumlah !== undefined && jumlah !== barangKeluar.jumlah) {
-            const selisih = barangKeluar.jumlah - parseInt(jumlah); // Kebalikan dari barang masuk
-            const stokBaru = barangKeluar.barang.stok + selisih;
+//         // Jika jumlah diubah, update stok barang
+//         if (jumlah !== undefined && jumlah !== barangKeluar.jumlah) {
+//             const selisih = barangKeluar.jumlah - parseInt(jumlah); // Kebalikan dari barang masuk
+//             const stokBaru = barangKeluar.barang.stok + selisih;
             
-            // Cek jika pengurangan jumlah keluar akan melebihi stok yang tersedia
-            if (selisih < 0 && Math.abs(selisih) > barangKeluar.barang.stok) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Penambahan jumlah keluar melebihi stok yang tersedia"
-                });
-            }
+//             // Cek jika pengurangan jumlah keluar akan melebihi stok yang tersedia
+//             if (selisih < 0 && Math.abs(selisih) > barangKeluar.barang.stok) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     message: "Penambahan jumlah keluar melebihi stok yang tersedia"
+//                 });
+//             }
             
-            await barangKeluar.barang.update({ stok: stokBaru });
-        }
+//             await barangKeluar.barang.update({ stok: stokBaru });
+//         }
 
-        // Update data transaksi
-        const updateData = {};
-        if (jumlah !== undefined) updateData.jumlah = parseInt(jumlah);
-        if (tanggal) updateData.tanggal = new Date(tanggal);
+//         // Update data transaksi
+//         const updateData = {};
+//         if (jumlah !== undefined) updateData.jumlah = parseInt(jumlah);
+//         if (tanggal) updateData.tanggal = new Date(tanggal);
 
-        await barangKeluar.update(updateData);
+//         await barangKeluar.update(updateData);
 
-        // Ambil data lengkap untuk response
-        const barangKeluarUpdated = await BarangKeluar.findByPk(id, {
-            include: [{
-                model: Barang,
-                as: 'barang',
-                attributes: ['kode_barang', 'nama_barang', 'satuan', 'stok', 'batas_maksimal']
-            }]
-        });
+//         // Ambil data lengkap untuk response
+//         const barangKeluarUpdated = await BarangKeluar.findByPk(id, {
+//             include: [{
+//                 model: Barang,
+//                 as: 'barang',
+//                 attributes: ['kode_barang', 'nama_barang', 'satuan', 'stok', 'batas_maksimal']
+//             }]
+//         });
 
-        res.status(200).json({
-            success: true,
-            message: "Data barang keluar berhasil diperbarui",
-            data: barangKeluarUpdated
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Gagal memperbarui data barang keluar",
-            error: error.message
-        });
-    }
-};
+//         res.status(200).json({
+//             success: true,
+//             message: "Data barang keluar berhasil diperbarui",
+//             data: barangKeluarUpdated
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Gagal memperbarui data barang keluar",
+//             error: error.message
+//         });
+//     }
+// };
 
-// DELETE /api/barang-keluar/:id - Hapus transaksi barang keluar
-export const deleteBarangKeluar = async (req, res) => {
-    try {
-        const { id } = req.params;
+// // DELETE /api/barang-keluar/:id - Hapus transaksi barang keluar
+// export const deleteBarangKeluar = async (req, res) => {
+//     try {
+//         const { id } = req.params;
 
-        // Cari transaksi barang keluar
-        const barangKeluar = await BarangKeluar.findByPk(id, {
-            include: [{
-                model: Barang,
-                as: 'barang'
-            }]
-        });
+//         // Cari transaksi barang keluar
+//         const barangKeluar = await BarangKeluar.findByPk(id, {
+//             include: [{
+//                 model: Barang,
+//                 as: 'barang'
+//             }]
+//         });
 
-        if (!barangKeluar) {
-            return res.status(404).json({
-                success: false,
-                message: "Data barang keluar tidak ditemukan"
-            });
-        }
+//         if (!barangKeluar) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Data barang keluar tidak ditemukan"
+//             });
+//         }
 
-        // Update stok barang (kembalikan stok yang keluar)
-        const stokSetelahHapus = barangKeluar.barang.stok + barangKeluar.jumlah;
-        await barangKeluar.barang.update({ stok: stokSetelahHapus });
+//         // Update stok barang (kembalikan stok yang keluar)
+//         const stokSetelahHapus = barangKeluar.barang.stok + barangKeluar.jumlah;
+//         await barangKeluar.barang.update({ stok: stokSetelahHapus });
 
-        // Hapus transaksi
-        await barangKeluar.destroy();
+//         // Hapus transaksi
+//         await barangKeluar.destroy();
 
-        res.status(200).json({
-            success: true,
-            message: "Data barang keluar berhasil dihapus"
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Gagal menghapus data barang keluar",
-            error: error.message
-        });
-    }
-};
+//         res.status(200).json({
+//             success: true,
+//             message: "Data barang keluar berhasil dihapus"
+//         });
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: "Gagal menghapus data barang keluar",
+//             error: error.message
+//         });
+//     }
+// };
 
 // GET /api/barang-keluar/summary/:bulan/:tahun - Ringkasan barang keluar per bulan
 export const getBarangKeluarSummary = async (req, res) => {
@@ -310,14 +350,32 @@ export const getBarangKeluarSummary = async (req, res) => {
             }
         };
 
-        const totalTransaksi = await BarangKeluar.count({ where: whereClause });
-        const totalJumlah = await BarangKeluar.sum('jumlah', { where: whereClause });
+        const totalTransaksi = await BarangKeluar.count({ 
+            where: whereClause,
+            include: [{
+                model: Barang,
+                as: 'barang',
+                where: { is_deleted: false }, // Tambahkan filter soft delete di relasi
+                required: true
+            }]
+         });
+        const totalJumlah = await BarangKeluar.sum('jumlah', { 
+            where: whereClause,
+            include: [{
+                model: Barang,
+                as: 'barang',
+                where: { is_deleted: false }, // Tambahkan filter soft delete di relasi
+                required: true
+            }] 
+        });
 
         const topBarang = await BarangKeluar.findAll({
             where: whereClause,
             include: [{
                 model: Barang,
                 as: 'barang',
+                where: { is_deleted: false },
+                required: true,
                 attributes: ['kode_barang', 'nama_barang', 'satuan']
             }],
             attributes: [

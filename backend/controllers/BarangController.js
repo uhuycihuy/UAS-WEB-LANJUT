@@ -28,12 +28,15 @@ export const getAllBarang = async (req, res) => {
         const { page = 1, limit = 10, search = '' } = req.query;
         const offset = (page - 1) * limit;
 
-        const whereClause = search ? {
-            [Op.or]: [
-                { nama_barang: { [Op.like]: `%${search}%` } },
-                { kode_barang: { [Op.like]: `%${search}%` } }
-            ]
-        } : {};
+        const whereClause = {
+            is_deleted: false, // hanya ambil barang yang belum dihapus
+            ...(search && {
+                [Op.or]: [
+                    { nama_barang: { [Op.like]: `%${search}%` } },
+                    { kode_barang: { [Op.like]: `%${search}%` } }
+                ]
+            })
+        };
 
         const { count, rows } = await Barang.findAndCountAll({
             where: whereClause,
@@ -68,8 +71,13 @@ export const getAllBarang = async (req, res) => {
 export const getBarangById = async (req, res) => {
     try {
         const { id } = req.params;
-        
-        const barang = await Barang.findByPk(id);
+      
+        const barang = await Barang.findOne({
+            where: {
+                id: id,
+                is_deleted: false
+            }
+        });
         
         if (!barang) {
             return res.status(404).json({
@@ -204,7 +212,12 @@ export const updateBarang = async (req, res) => {
         const { id } = req.params;
         const { nama_barang, satuan, batas_minimal, batas_maksimal, stok } = req.body;
 
-        const barang = await Barang.findByPk(id);
+        const barang = await Barang.findOne({
+            where: {
+                id: id,
+                is_deleted: false
+            }
+        });
         
         if (!barang) {
             return res.status(404).json({
@@ -238,12 +251,13 @@ export const updateBarang = async (req, res) => {
 };
 
 // DELETE /api/barang/:id - Hapus barang
+
 export const deleteBarang = async (req, res) => {
     try {
         const { id } = req.params;
 
         const barang = await Barang.findByPk(id);
-        
+
         if (!barang) {
             return res.status(404).json({
                 success: false,
@@ -251,22 +265,13 @@ export const deleteBarang = async (req, res) => {
             });
         }
 
-        // Cek apakah barang memiliki transaksi
-        const hasTransaksiMasuk = await BarangMasuk.findOne({ where: { barang_id: id } });
-        const hasTransaksiKeluar = await BarangKeluar.findOne({ where: { barang_id: id } });
-
-        if (hasTransaksiMasuk || hasTransaksiKeluar) {
-            return res.status(400).json({
-                success: false,
-                message: "Tidak dapat menghapus barang yang memiliki riwayat transaksi"
-            });
-        }
-
-        await barang.destroy();
+        // Soft delete: tandai barang sebagai sudah dihapus
+        barang.is_deleted = true;
+        await barang.save();
 
         res.status(200).json({
             success: true,
-            message: "Barang berhasil dihapus"
+            message: "Barang berhasil dihapus (soft delete)"
         });
     } catch (error) {
         res.status(500).json({
@@ -277,26 +282,91 @@ export const deleteBarang = async (req, res) => {
     }
 };
 
-// GET /api/barang/stok-kurang - Barang dengan stok kurang dari batas minimal
+// GET /api/barang/stok-kurang - Barang dengan stok kurang dari batas minimal (with pagination)
 export const getBarangStokKurang = async (req, res) => {
     try {
-        const barangStokKurang = await Barang.findAll({
-            where: {
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const offset = (page - 1) * limit;
+
+        // Debug: Log untuk melihat proses
+        console.log('=== DEBUG STOK KURANG ===');
+        
+        // Ambil semua barang terlebih dahulu, lalu filter di JavaScript
+        let whereClause = {
+            is_deleted: false
+        };
+        
+        // Tambahkan search jika ada
+        if (search) {
+            whereClause = {
+                is_deleted: false,
                 [Op.or]: [
-                    { stok: { [Op.lt]: { [Op.col]: 'batas_minimal' } } },
-                    { stok: { [Op.eq]: 0 } }
+                    { nama_barang: { [Op.like]: `%${search}%` } },
+                    { kode_barang: { [Op.like]: `%${search}%` } }
                 ]
-            },
-            order: [['stok', 'ASC']]
+            };
+        }
+
+        // Ambil semua data yang sesuai dengan search
+        const allBarang = await Barang.findAll({
+            where: whereClause,
+            order: [['stok', 'ASC'], ['nama_barang', 'ASC']]
         });
+
+        console.log('Total barang ditemukan:', allBarang.length);
+        
+        // Debug: Log beberapa data sample
+        if (allBarang.length > 0) {
+            console.log('Sample barang:', {
+                nama: allBarang[0].nama_barang,
+                stok: allBarang[0].stok,
+                batas_minimal: allBarang[0].batas_minimal,
+                stok_type: typeof allBarang[0].stok,
+                batas_type: typeof allBarang[0].batas_minimal
+            });
+        }
+
+        // Filter barang dengan stok kurang di JavaScript dengan parsing yang aman
+        const barangStokKurang = allBarang.filter(barang => {
+            const stok = parseInt(barang.stok) || 0;
+            const batasMinimal = parseInt(barang.batas_minimal) || 0;
+            const isStokKurang = stok < batasMinimal || stok === 0;
+            
+            // Debug log per item
+            if (allBarang.length <= 5) { // Hanya log jika data sedikit
+                console.log(`${barang.nama_barang}: stok=${stok}, min=${batasMinimal}, kurang=${isStokKurang}`);
+            }
+            
+            return isStokKurang;
+        });
+
+        console.log('Barang dengan stok kurang:', barangStokKurang.length);
+
+        // Manual pagination
+        const total = barangStokKurang.length;
+        const startIndex = offset;
+        const endIndex = startIndex + parseInt(limit);
+        const paginatedBarang = barangStokKurang.slice(startIndex, endIndex);
 
         res.status(200).json({
             success: true,
             message: "Data barang dengan stok kurang berhasil diambil",
-            data: barangStokKurang,
-            count: barangStokKurang.length
+            data: {
+                barang: paginatedBarang,
+                pagination: {
+                    total: total,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(total / limit)
+                },
+                debug: {
+                    total_barang_tersedia: allBarang.length,
+                    barang_stok_kurang: barangStokKurang.length
+                }
+            }
         });
     } catch (error) {
+        console.error('Error di getBarangStokKurang:', error);
         res.status(500).json({
             success: false,
             message: "Gagal mengambil data barang stok kurang",
@@ -305,23 +375,80 @@ export const getBarangStokKurang = async (req, res) => {
     }
 };
 
-// GET /api/barang/stok-berlebih - Barang dengan stok melebihi batas maksimal
+// GET /api/barang/stok-berlebih - Barang dengan stok melebihi batas maksimal (with pagination)
 export const getBarangStokBerlebih = async (req, res) => {
     try {
-        const barangStokBerlebih = await Barang.findAll({
-            where: {
-                stok: { [Op.gt]: { [Op.col]: 'batas_maksimal' } }
-            },
-            order: [['stok', 'DESC']]
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const offset = (page - 1) * limit;
+
+        // Debug: Log untuk melihat proses
+        console.log('=== DEBUG STOK BERLEBIH ===');
+
+        // Ambil semua barang terlebih dahulu, lalu filter di JavaScript
+        let whereClause = {
+            is_deleted: false
+        };
+        
+        // Tambahkan search jika ada
+        if (search) {
+            whereClause = {
+                is_deleted: false,
+                [Op.or]: [
+                    { nama_barang: { [Op.like]: `%${search}%` } },
+                    { kode_barang: { [Op.like]: `%${search}%` } }
+                ]
+            };
+        }
+
+        // Ambil semua data yang sesuai dengan search
+        const allBarang = await Barang.findAll({
+            where: whereClause,
+            order: [['stok', 'DESC'], ['nama_barang', 'ASC']]
         });
+
+        console.log('Total barang ditemukan:', allBarang.length);
+
+        // Filter barang dengan stok berlebih di JavaScript dengan parsing yang aman
+        const barangStokBerlebih = allBarang.filter(barang => {
+            const stok = parseInt(barang.stok) || 0;
+            const batasMaksimal = parseInt(barang.batas_maksimal) || 0;
+            const isStokBerlebih = stok > batasMaksimal;
+            
+            // Debug log per item
+            if (allBarang.length <= 5) { // Hanya log jika data sedikit
+                console.log(`${barang.nama_barang}: stok=${stok}, max=${batasMaksimal}, berlebih=${isStokBerlebih}`);
+            }
+            
+            return isStokBerlebih;
+        });
+
+        console.log('Barang dengan stok berlebih:', barangStokBerlebih.length);
+
+        // Manual pagination
+        const total = barangStokBerlebih.length;
+        const startIndex = offset;
+        const endIndex = startIndex + parseInt(limit);
+        const paginatedBarang = barangStokBerlebih.slice(startIndex, endIndex);
 
         res.status(200).json({
             success: true,
             message: "Data barang dengan stok berlebih berhasil diambil",
-            data: barangStokBerlebih,
-            count: barangStokBerlebih.length
+            data: {
+                barang: paginatedBarang,
+                pagination: {
+                    total: total,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(total / limit)
+                },
+                debug: {
+                    total_barang_tersedia: allBarang.length,
+                    barang_stok_berlebih: barangStokBerlebih.length
+                }
+            }
         });
     } catch (error) {
+        console.error('Error di getBarangStokBerlebih:', error);
         res.status(500).json({
             success: false,
             message: "Gagal mengambil data barang stok berlebih",
@@ -368,30 +495,47 @@ export const updateStokBarang = async (req, res) => {
     }
 };
 
-// GET /api/barang/summary - Ringkasan data barang
+// GET /api/barang/summary - Ringkasan data barang (FIXED VERSION)
 export const getBarangSummary = async (req, res) => {
     try {
-        const totalBarang = await Barang.count();
-        const totalStok = await Barang.sum('stok');
+        console.log('=== DEBUG SUMMARY ===');
         
-        const barangStokKurang = await Barang.count({
-            where: {
-                [Op.or]: [
-                    { stok: { [Op.lt]: { [Op.col]: 'batas_minimal' } } },
-                    { stok: { [Op.eq]: 0 } }
-                ]
-            }
+        const totalBarang = await Barang.count({
+            where: {is_deleted: false}
         });
+        const totalStok = await Barang.sum('stok', {
+            where: {is_deleted: false}
+        });
+        
+        console.log('Total barang:', totalBarang);
+        console.log('Total stok:', totalStok);
+        
+        // Ambil semua data dan filter di JavaScript untuk akurasi
+        const allBarang = await Barang.findAll({
+            where: {is_deleted: false},
+            attributes: ['id', 'stok', 'batas_minimal', 'batas_maksimal']
+        });
+        
+        const barangStokKurang = allBarang.filter(barang => {
+            const stok = parseInt(barang.stok) || 0;
+            const batasMinimal = parseInt(barang.batas_minimal) || 0;
+            return stok < batasMinimal || stok === 0;
+        }).length;
 
-        const barangStokBerlebih = await Barang.count({
-            where: {
-                stok: { [Op.gt]: { [Op.col]: 'batas_maksimal' } }
-            }
-        });
+        const barangStokBerlebih = allBarang.filter(barang => {
+            const stok = parseInt(barang.stok) || 0;
+            const batasMaksimal = parseInt(barang.batas_maksimal) || 0;
+            return stok > batasMaksimal;
+        }).length;
 
-        const barangStokHabis = await Barang.count({
-            where: { stok: 0 }
-        });
+        const barangStokHabis = allBarang.filter(barang => {
+            const stok = parseInt(barang.stok) || 0;
+            return stok === 0;
+        }).length;
+
+        console.log('Stok kurang:', barangStokKurang);
+        console.log('Stok berlebih:', barangStokBerlebih);
+        console.log('Stok habis:', barangStokHabis);
 
         res.status(200).json({
             success: true,
@@ -405,9 +549,56 @@ export const getBarangSummary = async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('Error di getBarangSummary:', error);
         res.status(500).json({
             success: false,
             message: "Gagal mengambil ringkasan data barang",
+            error: error.message
+        });
+    }
+};
+
+export const getDeletedBarang = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const offset = (page - 1) * limit;
+
+        let whereClause = {
+            is_deleted: true
+        };
+
+        if (search) {
+            whereClause[Op.or] = [
+                { nama_barang: { [Op.like]: `%${search}%` } },
+                { kode_barang: { [Op.like]: `%${search}%` } }
+            ];
+        }
+
+        const allDeleted = await Barang.findAll({
+            where: whereClause,
+            order: [['nama_barang', 'ASC']]
+        });
+
+        const total = allDeleted.length;
+        const paginatedBarang = allDeleted.slice(offset, offset + parseInt(limit));
+
+        res.status(200).json({
+            success: true,
+            message: "Data barang yang dihapus berhasil diambil",
+            data: {
+                barang: paginatedBarang,
+                pagination: {
+                    total: total,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(total / limit)
+                }
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Gagal mengambil data barang yang dihapus",
             error: error.message
         });
     }

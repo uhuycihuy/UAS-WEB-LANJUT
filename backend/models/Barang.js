@@ -35,6 +35,10 @@ const Barang = db.define('barang', {
   batas_maksimal: {
     type: DataTypes.INTEGER,
     defaultValue: 9999
+  },
+  is_deleted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false  // default: barang tidak dihapus
   }
 }, {
   freezeTableName: true,

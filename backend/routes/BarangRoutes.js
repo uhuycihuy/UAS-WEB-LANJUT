@@ -5,16 +5,20 @@ import {
     createBarang,
     updateBarang,
     deleteBarang,
+    getDeletedBarang,
     getBarangStokBerlebih,
     getBarangStokKurang,
     getBarangSummary,
-    updateStokBarang
+    //updateStokBarang
 } from "../controllers/BarangController.js"
 
 const router = express.Router();
 
 // GET /api/barang/summary - Ringkasan data barang (harus diatas :id)
 router.get('/summary', getBarangSummary);
+
+// GET barang yang dihapus (soft deleted)
+router.get("/deleted", getDeletedBarang);
 
 // GET /api/barang/stok-kurang - Barang dengan stok kurang dari batas minimal
 router.get('/stok-kurang', getBarangStokKurang);
@@ -34,10 +38,10 @@ router.post('/', createBarang);
 // PUT /api/barang/:id - Update data barang
 router.put('/:id', updateBarang);
 
-// PUT /api/barang/:id/stok - Update stok barang (untuk internal use)
-router.put('/:id/stok', updateStokBarang);
+// // PUT /api/barang/:id/stok - Update stok barang (untuk internal use)
+// router.put('/:id/stok', updateStokBarang);
 
-// DELETE /api/barang/:id - Hapus barang
-router.delete('/:id', deleteBarang);
+// Soft delete barang
+router.delete("/:id", deleteBarang);
 
 export default router;

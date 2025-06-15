@@ -24,7 +24,7 @@ const BarangKeluar = db.define("barang_keluar", {
     allowNull: false,
   },
   tanggal: {
-    type: DataTypes.DATEONLY,
+    type: DataTypes.DATE,
     allowNull: false,
   },
 }, {
