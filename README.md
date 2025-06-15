@@ -1,7 +1,2 @@
-Permisi
-tes tes ini jeni
-hallo
-plok
-ini jaki
-punten
-ajas
+UNTUK DI .env , MASUKIN IP ADDRESS DEVICE LU. CARANYA BUKA DI CMD 'ipconfig' .
+''::1,::ffff:127.0.0.1' -> INI HARUS ADA DIPALING AKHIR ATAU GAK BAKAL GAK BISA. 

@@ -1,6 +1,6 @@
 import Barang from "../models/Barang.js";
 import BarangMasuk from "../models/BarangMasuk.js";
-import BarangKeluar from "../models/BarangKeluar.js";
+// import BarangKeluar from "../models/BarangKeluar.js";
 import { Op } from "sequelize";
 
 // Helper function untuk generate kode barang dari nama
@@ -82,7 +82,7 @@ export const getBarangById = async (req, res) => {
         if (!barang) {
             return res.status(404).json({
                 success: false,
-                message: "Barang tidak ditemukan"
+                message: "Barang tidak ditemukan atau sudah di hapus"
             });
         }
 
@@ -457,43 +457,6 @@ export const getBarangStokBerlebih = async (req, res) => {
     }
 };
 
-// PUT /api/barang/:id/stok - Update stok barang (untuk internal use)
-// export const updateStokBarang = async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const { stok } = req.body;
-
-//         if (stok === undefined || stok < 0) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Stok harus berupa angka positif"
-//             });
-//         }
-
-//         const barang = await Barang.findByPk(id);
-        
-//         if (!barang) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "Barang tidak ditemukan"
-//             });
-//         }
-
-//         await barang.update({ stok: parseInt(stok) });
-
-//         res.status(200).json({
-//             success: true,
-//             message: "Stok barang berhasil diperbarui",
-//             data: barang
-//         });
-//     } catch (error) {
-//         res.status(500).json({
-//             success: false,
-//             message: "Gagal memperbarui stok barang",
-//             error: error.message
-//         });
-//     }
-// };
 
 // GET /api/barang/summary - Ringkasan data barang (FIXED VERSION)
 export const getBarangSummary = async (req, res) => {
