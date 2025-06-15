@@ -8,8 +8,7 @@ import {
     getDeletedBarang,
     getBarangStokBerlebih,
     getBarangStokKurang,
-    getBarangSummary,
-    //updateStokBarang
+    getBarangSummary
 } from "../controllers/BarangController.js"
 
 const router = express.Router();
@@ -37,9 +36,6 @@ router.post('/', createBarang);
 
 // PUT /api/barang/:id - Update data barang
 router.put('/:id', updateBarang);
-
-// // PUT /api/barang/:id/stok - Update stok barang (untuk internal use)
-// router.put('/:id/stok', updateStokBarang);
 
 // Soft delete barang
 router.delete("/:id", deleteBarang);
