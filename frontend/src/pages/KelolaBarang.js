@@ -13,12 +13,14 @@ const KelolaBarang = () => {
 
   const fetchBarang = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/api/barang');
-      setBarang(res.data);
+        const res = await axios.get('http://localhost:3001/api/barang');
+        const dataArray = res.data?.data?.barang || [];
+        setBarang(dataArray);
     } catch (err) {
-      console.error('Gagal mengambil data barang:', err);
+        console.error('Gagal mengambil data barang:', err);
+        setBarang([]);
     }
-  };
+    };
 
   const handleDelete = async (id) => {
     if (window.confirm('Yakin ingin menghapus barang ini?')) {
