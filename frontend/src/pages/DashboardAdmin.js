@@ -12,71 +12,74 @@ const DashboardAdmin = () => {
   });
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const [summaryBarang, masuk, keluar, kurang, lebih] = await Promise.all([
-        axios.get('/barang/summary'),
-        axios.get('/barang-masuk/summary/06/2025'),
-        axios.get('/barang-keluar/summary/06/2025'),
-        axios.get('/barang/stok-kurang'),
-        axios.get('/barang/stok-berlebih')
-      ]);
+    const fetchData = async () => {
+      const today = new Date();
+      const bulan = String(today.getMonth() + 1).padStart(2, '0');
+      const tahun = today.getFullYear();
 
-      setSummary({
+      try {
+        const [summaryBarang, masuk, keluar, kurang, lebih] = await Promise.all([
+          axios.get('/barang/summary'),
+          axios.get(`/barang-masuk/summary/${bulan}/${tahun}`),
+          axios.get(`/barang-keluar/summary/${bulan}/${tahun}`),
+          axios.get('/barang/stok-kurang'),
+          axios.get('/barang/stok-berlebih')
+        ]);
+
+        setSummary({
           totalBarang: summaryBarang.data?.data?.total_barang || 0,
           barangMasuk: masuk.data?.data?.total_jumlah || 0,
           barangKeluar: keluar.data?.data?.total_jumlah || 0,
           stokKurang: Array.isArray(kurang.data?.data?.barang) ? kurang.data.data.barang : [],
           stokBerlebih: Array.isArray(lebih.data?.data?.barang) ? lebih.data.data.barang : []
-    });
-    } catch (err) {
-      console.error('Gagal memuat data dashboard:', err);
-    }
-  };
+        });
+      } catch (err) {
+        console.error('Gagal memuat data dashboard:', err);
+      }
+    };
 
-  fetchData();
-}, []);
-
+    fetchData();
+  }, []);
 
   const renderTable = (title, items) => {
-  if (!Array.isArray(items)) {
-    console.warn(`${title} - items is not array`, items);
+    if (!Array.isArray(items)) {
+      console.warn(`${title} - items is not array`, items);
+      return (
+        <div className="col-md-6">
+          <h5>{title}</h5>
+          <div className="alert alert-warning">Data tidak valid</div>
+        </div>
+      );
+    }
+
     return (
       <div className="col-md-6">
         <h5>{title}</h5>
-        <div className="alert alert-warning">Data tidak valid</div>
+        <table className="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Kode Barang</th>
+              <th>Nama Barang</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.length > 0 ? (
+              items.map((item, i) => (
+                <tr key={item.id || i}>
+                  <td>{i + 1}</td>
+                  <td className="text-primary">{item.kode_barang}</td>
+                  <td>{item.nama_barang}</td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan="3">Tidak ada data.</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     );
-  }
-
-  return (
-    <div className="col-md-6">
-      <h5>{title}</h5>
-      <table className="table table-bordered table-striped">
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>Kode Barang</th>
-            <th>Nama Barang</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.length > 0 ? (
-            items.map((item, i) => (
-              <tr key={i}>
-                <td>{i + 1}</td>
-                <td className="text-primary">{item.kode_barang}</td>
-                <td>{item.nama_barang}</td>
-              </tr>
-            ))
-          ) : (
-            <tr><td colSpan="3">Tidak ada data.</td></tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-};
+  };
 
   return (
     <div className="d-flex">
