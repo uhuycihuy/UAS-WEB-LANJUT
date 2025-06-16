@@ -7,7 +7,7 @@ import { checkIpWhitelist } from './middleware/Ip.js';
 import barangRoutes from './routes/BarangRoutes.js';
 import barangMasukRoutes from "./routes/BarangMasukRoutes.js";
 import barangKeluarRoutes from "./routes/BarangKeluarRoutes.js";
-import laporanRoutes from "./routes/LaporanRoutes.js"; // Import new laporan routes
+import laporanRoutes from "./routes/LaporanRoutes.js"; 
 import { syncDatabase } from "./models/index.js";
 
 const app = express();
@@ -25,7 +25,7 @@ syncDatabase();
 app.use('/api/barang', barangRoutes);
 app.use('/api/barang-masuk', barangMasukRoutes);
 app.use('/api/barang-keluar', barangKeluarRoutes);
-app.use('/api/laporan', laporanRoutes); // Use new laporan routes
+app.use('/api/laporan', laporanRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server berjalan dengan port ${PORT}`);

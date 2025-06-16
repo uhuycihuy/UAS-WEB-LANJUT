@@ -28,9 +28,9 @@ Barang.hasMany(BarangMasuk, {
 const syncDatabase = async () => {
   try {
     await db.sync();
-    console.log("Database synced successfully");
+    console.log("Database berhasil tersinkron!");
   } catch (error) {
-    console.error("Error syncing database:", error);
+    console.error("Error saat menyinkron database:", error);
   }
 };
 

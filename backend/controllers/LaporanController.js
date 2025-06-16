@@ -4,34 +4,31 @@ import { Barang, BarangMasuk, BarangKeluar } from "../models/index.js";
 import { generatePdfReport } from "../utils/pdfGenerator.js";
 
 /**
- * Helper function to format date to DD-MM-YYYY HH:MM
- * @param {Date} date - The date object to format.
- * @returns {string} Formatted date and time string.
+ * Format date DD-MM-YYYY HH:MM
+@param {Date} date 
+@returns {string} 
  */
 const formatDate = (date) => {
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${day}-${month}-${year} ${hours}:${minutes}`;
 };
 
-/**
- * Generate a comprehensive monthly inventory report PDF (all data in one PDF).
- * GET /api/laporan/bulanan/:bulan/:tahun
- */
-export const generateMonthlyInventoryReport = async (req, res) => {
+
+export const generateLaporanBulanan = async (req, res) => {
     try {
         const { bulan, tahun } = req.params;
 
-        // Validate month and year
+        // Validasi bulan dan tahun
         const bulanInt = parseInt(bulan);
         const tahunInt = parseInt(tahun);
 
         if (isNaN(bulanInt) || bulanInt < 1 || bulanInt > 12 || isNaN(tahunInt)) {
-            console.warn(`[generateMonthlyInventoryReport] Invalid month or year: bulan=${bulan}, tahun=${tahun}`);
+            console.warn(`[generateLaporanBulanan] Invalid month or year: bulan=${bulan}, tahun=${tahun}`);
             return res.status(400).json({
                 success: false,
                 message: "Bulan harus berupa angka antara 1-12 dan tahun harus valid."
@@ -44,11 +41,11 @@ export const generateMonthlyInventoryReport = async (req, res) => {
         ];
         const periodeString = `PERIODE : ${monthNames[bulanInt].toUpperCase()} ${tahunInt}`;
 
-        // Construct date range for the monthly queries
-        const startDate = new Date(tahunInt, bulanInt - 1, 1); // Month is 0-indexed
-        const endDate = new Date(tahunInt, bulanInt, 0); // Last day of the month
+        // Membangun rentang tanggal untuk kueri bulanan
+        const startDate = new Date(tahunInt, bulanInt - 1, 1); 
+        const endDate = new Date(tahunInt, bulanInt, 0); 
 
-        // --- 1. Overall Summary Data ---
+        // --- 1. Laporan Keseluruhan Data ---
         const totalBarang = await Barang.count({
             where: { is_deleted: false }
         });
@@ -122,7 +119,7 @@ export const generateMonthlyInventoryReport = async (req, res) => {
         ]);
 
         // --- 4. Barang Berlebih Stok ---
-        // Fetch all non-deleted barang to determine stock status
+        // Fetch semua barang yang gak terdelete untuk melihat status semua stok
         const allBarangForStockCheck = await Barang.findAll({
             where: { is_deleted: false },
             order: [['nama_barang', 'ASC']]
@@ -168,7 +165,7 @@ export const generateMonthlyInventoryReport = async (req, res) => {
         ]);
 
 
-        // --- Prepare report data for PDF generation ---
+        // --- Data untuk Pdf generator ---
         const reportSections = [
             {
                 type: 'summary',

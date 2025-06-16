@@ -2,25 +2,18 @@
 import PDFDocument from 'pdfkit';
 
 /**
- * Generates a comprehensive PDF report with multiple sections (summary, tables).
- * @param {object} reportData - Object containing report details.
- * @param {string} reportData.title - The main title of the report.
- * @param {string} reportData.period - The period of the report (e.g., "PERIODE : JUNI").
- * @param {Array<object>} reportData.sections - An array of report sections.
- * Each section object can have:
- * - type: 'summary' | 'table'
- * - title: string
- * - summaryData?: Array<{ label: string, value: string }> // For 'summary' type
- * - headers?: Array<string> // For 'table' type
- * - data?: Array<Array<string>> // For 'table' type
- * - footerSummary?: Array<{ label: string, value: string }> // Optional for 'table' type
- * @returns {Promise<Buffer>} - A Promise that resolves with the PDF buffer.
+ * Menghasilkan laporan PDF yang komprehensif dengan beberapa bagian (ringkasan, tabel).
+ * @param {object} reportData - Objek yang berisi detail laporan.
+ * @param {string} reportData.title - Judul utama laporan.
+ * @param {string} reportData.period - Periode laporan (contoh, "PERIODE : JUNI").
+ * @param {Array<object>} reportData.sections - array untuk bagian laporan.
+ * @returns {Promise<Buffer>} - Promise yang diselesaikan dengan buffer PDF.
  */
 export const generatePdfReport = (reportData) => {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({
             size: 'A4',
-            margin: 30 // Reduced margin to fit more content
+            margin: 30 
         });
 
         const buffers = [];
@@ -36,34 +29,32 @@ export const generatePdfReport = (reportData) => {
         doc.font('Helvetica');
 
         /**
-         * Helper function to draw text inside a rounded rectangle (capsule).
-         * @param {string} text - The text to draw.
-         * @param {number} x - The x-coordinate for the rectangle.
-         * @param {number} y - The y-coordinate for the rectangle.
-         * @param {number} width - The width of the rectangle.
-         * @param {number} height - The height of the rectangle.
-         * @param {number} radius - The corner radius for the rectangle.
-         * @param {string} fillColor - The fill color for the rectangle.
-         * @param {string} textColor - The text color.
+         * Helper function untuk teks dalam kapsul (status) 
+         * @param {string} text - Ini bagian teksnya.
+         * @param {number} x - x-coordinate untuk kotaknya.
+         * @param {number} y - y-coordinate untuk kotaknya.
+         * @param {number} width - Untuk lebar kotaknya.
+         * @param {number} height - Untuk untuk tinggi kotaknya.
+         * @param {number} radius - Radius ujung kotaknya.
+         * @param {string} fillColor - untuk warna kotaknya.
+         * @param {string} textColor - Warna teksnya.
          */
         const drawCapsuleText = (text, x, y, width, height, radius, fillColor, textColor) => {
-            doc.save(); // Save current state
+            doc.save(); 
             doc.roundedRect(x, y, width, height, radius)
                .fill(fillColor);
             doc.fillColor(textColor)
-               .fontSize(8); // Adjust font size for capsule text
-            
-            // Center text vertically and horizontally within the capsule
+               .fontSize(8); 
             const textY = y + (height - doc.heightOfString(text, { width: width - 2 * radius, align: 'center' })) / 2;
-            doc.text(text, x + radius, textY, { // Add padding for text
-                width: width - 2 * radius, // Adjust width to account for padding
+            doc.text(text, x + radius, textY, { 
+                width: width - 2 * radius, 
                 align: 'center',
-                valign: 'center' // Not directly supported, but vertical centering logic applied
+                valign: 'center' 
             });
-            doc.restore(); // Restore previous state
+            doc.restore(); 
         };
 
-        // --- Main Report Title and Period ---
+        // --- Judul Laporan Utama dan Periode ---
         doc.fontSize(16)
            .text(reportData.title, { align: 'center' })
            .moveDown(0.5);
@@ -74,14 +65,14 @@ export const generatePdfReport = (reportData) => {
                .moveDown(1.5);
         }
 
-        // --- Iterate through sections and render them ---
+        // --- Pengulangan melalui bagian  ---
         reportData.sections.forEach(section => {
             const minSpaceNeeded = (section.type === 'summary') ? 100 : 150;
             if (doc.y + minSpaceNeeded > doc.page.height - doc.page.margins.bottom && doc.y > doc.page.margins.top + 10) {
                 doc.addPage();
             }
 
-            // --- Render Section Title (e.g., BARANG MASUK, BARANG KELUAR) ---
+            // --- Render Bagian Judul ( BARANG MASUK, BARANG KELUAR) ---
             doc.fontSize(14)
                .fillColor('#333');
             doc.text(section.title.toUpperCase(), doc.page.margins.left, doc.y, {
@@ -91,7 +82,7 @@ export const generatePdfReport = (reportData) => {
             .moveDown(1);
 
             if (section.type === 'summary' && section.summaryData) {
-                // --- Render Summary Section ---
+                // --- Render Bagian Laporan ---
                 const totalSummaryWidth = section.summaryData.length * 140 + (section.summaryData.length - 1) * 20;
                 const summaryStartX = (doc.page.width - totalSummaryWidth) / 2;
                 let currentSummaryX = summaryStartX;
@@ -140,7 +131,7 @@ export const generatePdfReport = (reportData) => {
                 doc.moveDown(2);
 
             } else if (section.type === 'table' && section.headers && section.data) {
-                // --- Render Table Section ---
+                // --- Render Table  ---
                 const startX = doc.page.margins.left;
                 let startY = doc.y;
                 const rowHeight = 25;
@@ -148,7 +139,7 @@ export const generatePdfReport = (reportData) => {
                 const tableWidth = doc.page.width - 2 * startX;
                 const columnWidth = tableWidth / columnCount;
 
-                // Function to draw a row (headers or data)
+                // Fungsi untuk menggambar baris header dan data
                 const drawTableRow = (cells, isHeader = false) => {
                     if (startY + rowHeight > doc.page.height - doc.page.margins.bottom) {
                         doc.addPage();
@@ -179,43 +170,41 @@ export const generatePdfReport = (reportData) => {
                            .lineTo(cellX, startY + rowHeight)
                            .stroke();
 
-                        // Special handling for 'STATUS' column
+                        // Handling untuk kolom 'STATUS' 
                         if (section.headers[i] === 'STATUS' && !isHeader) {
                             let fillColor, textColor;
                             const statusText = cell.toLowerCase();
-                            const capsulePadding = 8; // Increased padding for more space
-                            
-                            // Calculate text width to determine dynamic capsule width
+                            const capsulePadding = 8; 
                             const textWidth = doc.widthOfString(cell, { fontSize: 8 });
                             const capsuleWidth = textWidth + 2 * capsulePadding;
-                            const capsuleHeight = rowHeight - 10; // Adjust height to fit within row
-                            const capsuleX = cellX + (columnWidth - capsuleWidth) / 2; // Center capsule
-                            const capsuleY = startY + (rowHeight - capsuleHeight) / 2; // Center capsule vertically
+                            const capsuleHeight = rowHeight - 10; 
+                            const capsuleX = cellX + (columnWidth - capsuleWidth) / 2; 
+                            const capsuleY = startY + (rowHeight - capsuleHeight) / 2; 
 
                             if (statusText === 'aman') {
-                                fillColor = '#D4EDDA'; // Light Green
-                                textColor = '#155724'; // Dark Green
+                                fillColor = '#D4EDDA'; 
+                                textColor = '#155724'; 
                             } else if (statusText === 'kurang' || statusText === 'habis') {
-                                fillColor = '#F8D7DA'; // Light Red
-                                textColor = '#721C24'; // Dark Red
+                                fillColor = '#F8D7DA'; 
+                                textColor = '#721C24'; 
                             } else if (statusText === 'berlebih') {
-                                fillColor = '#FFF3CD'; // Light Yellow (Orange-ish)
-                                textColor = '#856404'; // Dark Yellow (Orange-ish)
+                                fillColor = '#FFF3CD'; 
+                                textColor = '#856404'; 
                             } else {
-                                fillColor = '#FFFFFF'; // Default white
-                                textColor = '#000000'; // Default black
+                                fillColor = '#FFFFFF'; 
+                                textColor = '#000000'; 
                             }
                             drawCapsuleText(cell, capsuleX, capsuleY, capsuleWidth, capsuleHeight, capsuleHeight / 2, fillColor, textColor); // Use height/2 for perfect capsule
                         } else {
                             // Standard text rendering
                             let currentTextColor;
                             if (isHeader) {
-                                currentTextColor = '#64748B'; // Default white for all headers
+                                currentTextColor = '#64748B'; 
                             } else {
                                 if (section.headers[i] === 'KODE BARANG') {
-                                    currentTextColor = '#1E40AF'; // Dark blue for KODE BARANG data
+                                    currentTextColor = '#1E40AF'; 
                                 } else {
-                                    currentTextColor = '#000000'; // Default black for other data
+                                    currentTextColor = '#000000'; 
                                 }
                             }
 
