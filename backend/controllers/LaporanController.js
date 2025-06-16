@@ -1,4 +1,3 @@
-// controllers/laporanController.js
 import { Op } from "sequelize";
 import { Barang, BarangMasuk, BarangKeluar } from "../models/index.js";
 import { generatePdfReport } from "../utils/pdfGenerator.js";

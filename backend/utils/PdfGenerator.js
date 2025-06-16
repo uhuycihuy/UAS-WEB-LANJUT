@@ -1,4 +1,3 @@
-// utils/pdfGenerator.js
 import PDFDocument from 'pdfkit';
 
 /**

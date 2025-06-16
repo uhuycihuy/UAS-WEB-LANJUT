@@ -1,4 +1,3 @@
-// routes/laporanRoutes.js
 import express from "express";
 import {
     generateLaporanBulanan,
