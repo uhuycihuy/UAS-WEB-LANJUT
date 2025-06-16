@@ -10,7 +10,7 @@ export const getAllBarangMasuk = async (req, res) => {
 
         let whereClause = {};
         
-        // Filter berdasarkan bulan dan tahun jika disediakan
+        // Filter berdasarkan bulan dan tahun 
         if (bulan && tahun) {
             whereClause.tanggal = {
                 [Op.and]: [
@@ -32,14 +32,14 @@ export const getAllBarangMasuk = async (req, res) => {
             as: 'barang',
             attributes: ['kode_barang', 'nama_barang', 'satuan', 'batas_maksimal'],
             where: {
-                is_deleted: false  // ⬅️ Hanya ambil barang yang belum dihapus
+                is_deleted: false  
             }
         };
 
-        // Filter berdasarkan search jika disediakan
+        // Filter berdasarkan search 
         if (search) {
             includeClause.where = {
-                ...includeClause.where, // Tetap filter `is_deleted`
+                ...includeClause.where, 
                 [Op.or]: [
                     { nama_barang: { [Op.like]: `%${search}%` } },
                     { kode_barang: { [Op.like]: `%${search}%` } }
@@ -113,7 +113,7 @@ export const getBarangMasukById = async (req, res) => {
     }
 };
 
-// GET /api/barang-masuk/summary/:bulan/:tahun - Ringkasan barang masuk per bulan //Tambahin tanggal
+// GET /api/barang-masuk/summary/:bulan/:tahun - Ringkasan barang masuk per bulan 
 export const getBarangMasukSummary = async (req, res) => {
     try {
         const { bulan, tahun } = req.params;
@@ -164,7 +164,7 @@ export const getBarangMasukSummary = async (req, res) => {
             include: [{
                 model: Barang,
                 as: 'barang',
-                where: { is_deleted: false }, // Tambahkan filter soft delete di relasi
+                where: { is_deleted: false }, 
                 required: true
             }]
         });
