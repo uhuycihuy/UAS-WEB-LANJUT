@@ -1,9 +1,8 @@
 import Barang from "../models/Barang.js";
 import BarangMasuk from "../models/BarangMasuk.js";
-// import BarangKeluar from "../models/BarangKeluar.js";
 import { Op } from "sequelize";
 
-// Helper function untuk generate kode barang dari nama
+// Generate kode barang dari nama
 const generateKodeBarang = (namaBarang) => {
     // Ambil 3 huruf pertama dari setiap kata, hapus spasi dan karakter khusus
     const words = namaBarang.toUpperCase().replace(/[^A-Z0-9\s]/g, '').split(' ');

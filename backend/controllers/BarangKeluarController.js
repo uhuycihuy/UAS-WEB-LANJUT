@@ -10,7 +10,7 @@ export const getAllBarangKeluar = async (req, res) => {
 
         let whereClause = {};
         
-        // Filter berdasarkan bulan dan tahun jika disediakan
+        // Filter berdasarkan bulan dan tahun 
         if (bulan && tahun) {
             whereClause.tanggal = {
                 [Op.and]: [
@@ -43,7 +43,7 @@ export const getAllBarangKeluar = async (req, res) => {
             attributes: ['kode_barang', 'nama_barang', 'satuan', 'batas_maksimal']
         };
 
-        // Filter berdasarkan search jika disediakan
+        // Filter berdasarkan search 
         if (search) {
             includeClause.where = {
                 [Op.or]: [
@@ -109,7 +109,7 @@ export const getBarangKeluarById = async (req, res) => {
         if (!barangKeluar) {
             return res.status(404).json({
                 success: false,
-                message: "Data barang keluar tidak ditemukan"
+                message: "Data barang keluar tidak ditemukan atau barang sudah dihapus"
             });
         }
 
@@ -129,7 +129,7 @@ export const getBarangKeluarById = async (req, res) => {
 // POST /api/barang-keluar - Catat barang keluar baru
 export const createBarangKeluar = async (req, res) => {
     try {
-        const { barang_id, jumlah } = req.body; // Hapus tanggal dari destructuring
+        const { barang_id, jumlah } = req.body; 
         
         // Validasi input
         if (!barang_id || !jumlah) {
@@ -240,7 +240,7 @@ export const getBarangKeluarSummary = async (req, res) => {
             include: [{
                 model: Barang,
                 as: 'barang',
-                where: { is_deleted: false }, // Tambahkan filter soft delete di relasi
+                where: { is_deleted: false }, 
                 required: true
             }]
          });
@@ -249,7 +249,7 @@ export const getBarangKeluarSummary = async (req, res) => {
             include: [{
                 model: Barang,
                 as: 'barang',
-                where: { is_deleted: false }, // Tambahkan filter soft delete di relasi
+                where: { is_deleted: false }, 
                 required: true
             }] 
         });
