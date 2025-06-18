@@ -55,6 +55,7 @@ const FormBarangMasuk = () => {
 
     return (
         <div className="d-flex">
+            <Sidebar />
             <div className="flex-grow-1 p-4">
                 <form onSubmit={handleSubmit}>
                     <div className="mb-3">
