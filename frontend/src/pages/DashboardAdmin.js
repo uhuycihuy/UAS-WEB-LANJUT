@@ -57,10 +57,10 @@ const DashboardAdmin = () => {
         <h5>{title}</h5>
         <table className="table table-bordered table-striped">
           <thead>
-            <tr>
-              <th>No</th>
-              <th>Kode Barang</th>
-              <th>Nama Barang</th>
+            <tr className="text-center">
+              <th>NO</th>
+              <th>KODE BARANG</th>
+              <th>NAMA BARANG</th>
             </tr>
           </thead>
           <tbody>

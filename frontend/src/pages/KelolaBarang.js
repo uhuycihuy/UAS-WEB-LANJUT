@@ -1,14 +1,13 @@
-// src/pages/KelolaBarang.jsx
 import React, { useState, useEffect } from 'react';
 import axios from '../api/axiosInstance';
 import Sidebar from '../components/Sidebar';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate untuk navigasi
+import { useNavigate } from 'react-router-dom';
 
 const KelolaBarang = () => {
     const [barang, setBarang] = useState([]);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState('all');
-    const navigate = useNavigate(); // Inisialisasi hook useNavigate
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchBarang();
@@ -16,7 +15,7 @@ const KelolaBarang = () => {
 
     const fetchBarang = async () => {
         try {
-            const res = await axios.get('http://localhost:3001/api/barang');
+            const res = await axios.get('/barang');
             const dataArray = res.data?.data?.barang || [];
             setBarang(dataArray);
         } catch (err) {
@@ -28,8 +27,8 @@ const KelolaBarang = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Yakin ingin menghapus barang ini?')) {
             try {
-                await axios.delete(`http://localhost:3001/api/barang/${id}`);
-                fetchBarang(); // Refresh data setelah penghapusan
+                await axios.delete(`/barang/${id}`);
+                fetchBarang();
             } catch (err) {
                 console.error('Gagal menghapus:', err);
                 alert('Gagal menghapus barang.');
@@ -37,14 +36,16 @@ const KelolaBarang = () => {
         }
     };
 
-    // Fungsi untuk navigasi ke form tambah barang baru
     const handleTambahBarangClick = () => {
-        navigate('/tambah-barang'); // Mengarahkan ke rute FormTambahBarang.jsx
+        navigate('/tambah-barang');
     };
 
-    // Fungsi untuk menangani klik tombol "Keluar"
+    const handleEditClick = (id) => {
+        navigate(`/edit-barang/${id}`);
+    };
+
     const handleBarangKeluarClick = (id) => {
-        navigate(`/barang-keluar/form/${id}`); // Mengarahkan ke FormBarangKeluar.jsx dengan ID barang
+        navigate(`/barang-keluar/form/${id}`);
     };
 
     const filteredData = barang.filter(item => {
@@ -66,7 +67,6 @@ const KelolaBarang = () => {
             <div className="flex-grow-1 p-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <h2>Kelola Data Barang</h2>
-                    {/* Tombol "Tambah Barang" */}
                     <button className="btn btn-primary" onClick={handleTambahBarangClick}>
                         + Tambah Barang
                     </button>
@@ -82,6 +82,7 @@ const KelolaBarang = () => {
                     />
                     <select
                         className="form-select w-auto"
+                        value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                     >
                         <option value="all">Semua Stok</option>
@@ -92,15 +93,15 @@ const KelolaBarang = () => {
 
                 <table className="table table-bordered table-striped">
                     <thead className="table-light">
-                        <tr>
-                            <th>No</th>
-                            <th>Kode</th>
-                            <th>Nama</th>
-                            <th>Satuan</th>
-                            <th>Stok</th>
-                            <th>Batas Min</th>
-                            <th>Batas Max</th>
-                            <th>Aksi</th>
+                        <tr className="text-center">
+                            <th>NO</th>
+                            <th>KODE</th>
+                            <th>NAMA</th>
+                            <th>SATUAN</th>
+                            <th>STOK</th>
+                            <th>BATAS MIN</th>
+                            <th>BATAS MAX</th>
+                            <th>AKSI</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -114,18 +115,13 @@ const KelolaBarang = () => {
                                 <td>{item.batas_minimal}</td>
                                 <td>{item.batas_maksimal}</td>
                                 <td>
-                                    {/* Tombol Edit */}
-                                    <button className="btn btn-primary btn-sm me-1">Edit</button>
-                                    
-                                    {/* Tombol Hapus */}
+                                    <button className="btn btn-primary btn-sm me-1" onClick={() => handleEditClick(item.id)}>Edit</button>
                                     <button className="btn btn-danger btn-sm me-1" onClick={() => handleDelete(item.id)}>Hapus</button>
-
-                                    {/* Tombol "Keluar" - sekarang di akhir dan bertuliskan "Keluar" */}
                                     <button
-                                        className="btn btn-success btn-sm" // Hapus me-1 jika ini tombol terakhir di baris
+                                        className="btn btn-success btn-sm"
                                         onClick={() => handleBarangKeluarClick(item.id)}
                                         disabled={item.stok <= 0}
-                                        title={item.stok <= 0 ? "Stok habis, tidak bisa mengeluarkan barang" : "Keluarkan Barang"}
+                                        title={item.stok <= 0 ? "Stok habis" : "Keluarkan Barang"}
                                     >
                                         Keluar
                                     </button>
