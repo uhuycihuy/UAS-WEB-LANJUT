@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import axios from '../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from './Sidebar';
+// import Sidebar from './Sidebar';
 
 const FormBarangMasuk = () => {
     const [formData, setFormData] = useState({
@@ -55,7 +55,6 @@ const FormBarangMasuk = () => {
 
     return (
         <div className="d-flex">
-            <Sidebar />
             <div className="flex-grow-1 p-4">
                 <form onSubmit={handleSubmit}>
                     <div className="mb-3">

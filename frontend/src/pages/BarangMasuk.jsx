@@ -8,6 +8,7 @@ const BarangMasuk = () => {
     const [barangMasuk, setBarangMasuk] = useState([]);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
+    const [totalData, setTotalData] = useState(0); 
     const [totalPages, setTotalPages] = useState(1);
 
     // State untuk filter bulan dan tahun, disesuaikan dengan backend
@@ -18,12 +19,14 @@ const BarangMasuk = () => {
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
 
+    const limit = 10;
+
     const fetchBarangMasuk = async (currentSearch = '', currentPage = 1, currentMonth = '', currentYear = '') => {
         try {
             const params = {
                 search: currentSearch,
                 page: currentPage,
-                limit: 10,
+                limit
             };
 
             // Tambahkan parameter bulan dan tahun sesuai logika backend
@@ -37,13 +40,16 @@ const BarangMasuk = () => {
             const res = await axios.get('http://localhost:3001/api/barang-masuk', { params });
             // console.log("Data fetched:", res.data); // Untuk debugging
 
+            const allData = res.data?.data || {};
             setBarangMasuk(res.data.data.barang_masuk || []);
             setTotalPages(res.data.data.pagination.totalPages || 1);
+            setTotalData(allData.pagination?.total || 0);
             setShowAlert(false); // Sembunyikan alert jika fetch berhasil
         } catch (err) {
             console.error('Gagal ambil data barang masuk:', err);
             setBarangMasuk([]);
             setTotalPages(1);
+            setTotalData(0);
             setAlertMessage('Gagal mengambil data barang masuk.');
             setShowAlert(true);
         }
@@ -211,7 +217,7 @@ const BarangMasuk = () => {
                 </Table>
 
                 <div className="d-flex justify-content-between">
-                    <small>Menampilkan {barangMasuk.length} dari {totalPages * 10} data</small>
+                    <small>Menampilkan {Math.min(page * limit, totalData)} dari {totalData} data</small>
                     <Pagination>{renderPagination()}</Pagination>
                 </div>
             </div>

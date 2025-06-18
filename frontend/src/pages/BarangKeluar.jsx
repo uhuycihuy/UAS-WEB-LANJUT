@@ -9,6 +9,7 @@ const BarangKeluar = () => {
     const [barangKeluar, setBarangKeluar] = useState([]);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
+    const [totalData, setTotalData] = useState(0); 
     const [totalPages, setTotalPages] = useState(1);
 
     // State untuk filter bulan dan tahun, disesuaikan dengan backend
@@ -18,6 +19,8 @@ const BarangKeluar = () => {
     // State untuk kontrol tampilan Alert
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
+
+    const limit = 10;
 
     const fetchBarangKeluar = async (currentSearch = '', currentPage = 1, currentMonth = '', currentYear = '') => {
         try {
@@ -38,13 +41,16 @@ const BarangKeluar = () => {
             // Endpoint backend Anda adalah 'http://localhost:3001/api/barang-keluar'
             const res = await axios.get('http://localhost:3001/api/barang-keluar', { params });
             
+            const allData = res.data?.data || {};
             setBarangKeluar(res.data.data.barang_keluar || []);
             setTotalPages(res.data.data.pagination.totalPages || 1);
+            setTotalData(allData.pagination?.total || 0);
             setShowAlert(false); // Sembunyikan alert jika fetch berhasil
         } catch (err) {
             console.error('Gagal ambil data barang keluar:', err);
             setBarangKeluar([]);
             setTotalPages(1);
+            setTotalData(0);
             setAlertMessage('Gagal mengambil data barang keluar.');
             setShowAlert(true);
         }
@@ -210,7 +216,7 @@ const BarangKeluar = () => {
                 </Table>
 
                 <div className="d-flex justify-content-between">
-                    <small>Menampilkan {barangKeluar.length} dari {totalPages * 10} data</small>
+                    <small>Menampilkan {Math.min(page * limit, totalData)} dari {totalData} data</small>
                     <Pagination>{renderPagination()}</Pagination>
                 </div>
             </div>

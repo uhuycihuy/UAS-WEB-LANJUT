@@ -120,6 +120,16 @@ export const createBarang = async (req, res) => {
             });
         }
 
+        const stokMin = parseInt(batas_minimal);
+        const stokMax = parseInt(batas_maksimal);
+
+        if (stokMin >= stokMax) {
+            return res.status(400).json({
+                success: false,
+                message: "Stok minimum harus lebih kecil dari stok maksimum"
+            });
+        }
+
         // Generate kode barang otomatis
         let kode_barang = generateKodeBarang(nama_barang);
         
@@ -225,6 +235,17 @@ export const updateBarang = async (req, res) => {
             });
         }
 
+        const stokMin = parseInt(batas_minimal);
+        const stokMax = parseInt(batas_maksimal);
+
+        if (stokMin >= stokMax) {
+            return res.status(400).json({
+                success: false,
+                message: "Stok minimum harus lebih kecil dari stok maksimum"
+            });
+        }
+
+
         // Update data
         const updateData = {};
         if (nama_barang) updateData.nama_barang = nama_barang;
@@ -250,7 +271,6 @@ export const updateBarang = async (req, res) => {
 };
 
 // DELETE /api/barang/:id - Hapus barang
-
 export const deleteBarang = async (req, res) => {
     try {
         const { id } = req.params;
