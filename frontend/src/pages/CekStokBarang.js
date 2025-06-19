@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../api/axiosInstance';
 import Sidebar from '../components/Sidebar';
-import { Table, Form, Pagination, Alert } from 'react-bootstrap';
+import { Table, Form, Pagination, Alert, Row, Col } from 'react-bootstrap';
 
 const CekStokBarang = () => {
   const [barang, setBarang] = useState([]);
@@ -20,8 +20,7 @@ const CekStokBarang = () => {
       const params = {
         page: currentPage,
         limit: itemsPerPage,
-        search,
-        filter
+        search
       };
 
       const res = await axios.get('/barang', { params });
@@ -43,7 +42,7 @@ const CekStokBarang = () => {
 
   useEffect(() => {
     fetchBarang();
-  }, [currentPage, search, filter]);
+  }, [currentPage, search]); 
 
   const getStatusStok = (stok, min, max) => {
     if (stok < min) return 'Kurang';
@@ -60,13 +59,25 @@ const CekStokBarang = () => {
     }
   };
 
+  // Filter data di frontend berdasarkan status stok
+  const filteredBarang = barang.filter(item => {
+    const status = getStatusStok(item.stok, item.batas_minimal, item.batas_maksimal);
+    
+    if (filter === 'all') return true;
+    if (filter === 'low') return status === 'Kurang';
+    if (filter === 'high') return status === 'Berlebih';
+    if (filter === 'normal') return status === 'Normal';
+    
+    return true;
+  });
+
   const renderPagination = () => {
     const items = [];
     for (let i = 1; i <= totalPages; i++) {
       items.push(
-        <Pagination.Item
-          key={i}
-          active={i === currentPage}
+        <Pagination.Item 
+          key={i} 
+          active={i === currentPage} 
           onClick={() => setCurrentPage(i)}
         >
           {i}
@@ -81,33 +92,34 @@ const CekStokBarang = () => {
       <Sidebar />
       <div className="container mt-4">
         <h4 className="fw-bold">Cek Stok Barang</h4>
-        <p>Filter dan pantau status stok barang</p>
 
-        <div className="d-flex gap-2 flex-wrap mb-3">
-          <Form.Control
-            type="text"
-            placeholder="Cari berdasarkan nama atau kode barang..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            style={{ maxWidth: '400px' }}
-          />
-          <Form.Select
-            value={filter}
-            onChange={(e) => {
-              setFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            style={{ width: '180px' }}
-          >
-            <option value="all">Semua Stok</option>
-            <option value="low">Stok Kurang</option>
-            <option value="high">Stok Berlebih</option>
-            <option value="normal">Stok Normal</option>
-          </Form.Select>
-        </div>
+        <Row className="mb-3">
+          <Col md={8}>
+            <Form.Control
+              type="text"
+              placeholder="Cari berdasarkan nama atau kode barang..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </Col>
+          <Col md={3}>
+            <Form.Select
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="all">Semua Stok</option>
+              <option value="low">Stok Kurang</option>
+              <option value="high">Stok Berlebih</option>
+              <option value="normal">Stok Normal</option>
+            </Form.Select>
+          </Col>
+        </Row>
 
         {showAlert && (
           <Alert variant="warning" onClose={() => setShowAlert(false)} dismissible>
@@ -115,43 +127,45 @@ const CekStokBarang = () => {
           </Alert>
         )}
 
-        <div className="table-responsive">
-          <Table bordered striped hover>
-            <thead className="text-center table-light">
+        <Table striped bordered hover>
+          <thead>
+            <tr className="text-center">
+              <th>NO</th>
+              <th>KODE</th>
+              <th>NAMA</th>
+              <th>SATUAN</th>
+              <th>STOK</th>
+              <th>BATAS MIN</th>
+              <th>BATAS MAX</th>
+              <th>STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredBarang.length === 0 ? (
               <tr>
-                <th>NO</th>
-                <th>KODE</th>
-                <th>NAMA</th>
-                <th>SATUAN</th>
-                <th>STOK</th>
-                <th>BATAS MIN</th>
-                <th>BATAS MAX</th>
-                <th>STATUS</th>
+                <td colSpan="8" className="text-center">Tidak ada data ditemukan</td>
               </tr>
-            </thead>
-            <tbody>
-              {barang.length === 0 ? (
-                <tr><td colSpan="8" className="text-center">Tidak ada data.</td></tr>
-              ) : (
-                barang.map((item, index) => {
-                  const status = getStatusStok(item.stok, item.batas_minimal, item.batas_maksimal);
-                  return (
-                    <tr key={item.id}>
-                      <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                      <td className="text-primary">{item.kode_barang}</td>
-                      <td>{item.nama_barang}</td>
-                      <td>{item.satuan}</td>
-                      <td><strong>{item.stok}</strong></td>
-                      <td>{item.batas_minimal}</td>
-                      <td>{item.batas_maksimal}</td>
-                      <td><span className={getStatusClass(status)}>{status}</span></td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </Table>
-        </div>
+            ) : (
+              filteredBarang.map((item, index) => {
+                const status = getStatusStok(item.stok, item.batas_minimal, item.batas_maksimal);
+                return (
+                  <tr key={item.id} className="text-center">
+                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                    <td className="text-primary">{item.kode_barang}</td>
+                    <td>{item.nama_barang}</td>
+                    <td>{item.satuan}</td>
+                    <td><strong>{item.stok}</strong></td>
+                    <td>{item.batas_minimal}</td>
+                    <td>{item.batas_maksimal}</td>
+                    <td>
+                      <span className={getStatusClass(status)}>{status}</span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </Table>
 
         <div className="d-flex justify-content-between">
           <small>Menampilkan {Math.min(currentPage * itemsPerPage, totalData)} dari {totalData} data</small>
