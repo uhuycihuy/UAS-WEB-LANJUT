@@ -191,7 +191,7 @@ const BarangKeluar = () => {
                             <th>KODE BARANG</th>
                             <th>NAMA BARANG</th>
                             <th>SATUAN</th>
-                            <th>JUMLAH KELUAR</th> {/* Ini judul kolomnya */}
+                            <th>JUMLAH KELUAR</th>
                             <th>TANGGAL & WAKTU KELUAR</th>
                         </tr>
                     </thead>
@@ -207,7 +207,7 @@ const BarangKeluar = () => {
                                     <td className="text-primary">{item.barang.kode_barang}</td>
                                     <td>{item.barang.nama_barang}</td>
                                     <td>{item.barang.satuan}</td>
-                                    <td>{item.jumlah}</td> {/* <--- INI PERBAIKANNYA: tampilkan item.jumlah */}
+                                    <td>{item.jumlah}</td> 
                                     <td>{format(new Date(item.tanggal), 'dd-MM-yyyy HH:mm:ss')}</td>
                                 </tr>
                             ))
