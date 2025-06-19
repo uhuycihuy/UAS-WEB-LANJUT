@@ -65,8 +65,8 @@ const FormEditBarang = () => {
       alert('Barang berhasil diperbarui.');
       navigate('/kelola-barang');
     } catch (err) {
-      console.error(err);
-      alert('Gagal menyimpan perubahan.');
+      console.error('Gagal menyimpan perubahan:', err.response?.data?.message || err.message);
+      alert(`Gagal menyimpan perubahan: ${err.response?.data?.message || 'Terjadi kesalahan'}.`);
     }
   };
 
