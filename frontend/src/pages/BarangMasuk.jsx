@@ -204,7 +204,7 @@ const BarangMasuk = () => {
                             barangMasuk.map((item, index) => (
                                 <tr key={item.id} className="text-center">
                                     <td>{(page - 1) * 10 + index + 1}</td>
-                                    <td>{item.barang.kode_barang}</td>
+                                    <td className="text-primary">{item.barang.kode_barang}</td>
                                     <td>{item.barang.nama_barang}</td>
                                     <td>{item.barang.satuan}</td>
                                     <td>{item.jumlah}</td>

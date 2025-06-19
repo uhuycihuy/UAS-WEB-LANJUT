@@ -9,9 +9,9 @@ const FormEditBarang = () => {
   const [formData, setFormData] = useState({
     nama_barang: '',
     satuan: '',
-    stok: 0,
-    batas_minimal: 0,
-    batas_maksimal: 0,
+    stok: '',
+    batas_minimal: '',
+    batas_maksimal: '',
   });
 
   useEffect(() => {
@@ -24,9 +24,9 @@ const FormEditBarang = () => {
           setFormData({
             nama_barang: barang.nama_barang,
             satuan: barang.satuan,
-            stok: barang.stok,
-            batas_minimal: barang.batas_minimal,
-            batas_maksimal: barang.batas_maksimal,
+            stok: barang.stok?.toString() ?? '',
+            batas_minimal: barang.batas_minimal?.toString() ?? '',
+            batas_maksimal: barang.batas_maksimal?.toString() ?? '',
           });
         } else {
           alert('Barang tidak ditemukan.');
@@ -46,19 +46,27 @@ const FormEditBarang = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: ['stok', 'batas_minimal', 'batas_maksimal'].includes(name) ? parseInt(value) || 0 : value,
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`/barang/${id}`, formData);
+      const payload = {
+        nama_barang: formData.nama_barang,
+        satuan: formData.satuan,
+        stok: parseInt(formData.stok) || 0,
+        batas_minimal: parseInt(formData.batas_minimal) || 0,
+        batas_maksimal: parseInt(formData.batas_maksimal) || 0,
+      };
+
+      await axios.put(`/barang/${id}`, payload);
       alert('Barang berhasil diperbarui.');
       navigate('/kelola-barang');
     } catch (err) {
-      console.error('Gagal menambahkan barang baru:', err.response?.data?.message || err.message);
-      alert(`Gagal menambahkan barang baru: ${err.response?.data?.message || 'Terjadi kesalahan'}.`);
+      console.error(err);
+      alert('Gagal menyimpan perubahan.');
     }
   };
 

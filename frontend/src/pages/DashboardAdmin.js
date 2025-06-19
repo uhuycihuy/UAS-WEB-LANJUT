@@ -63,7 +63,7 @@ const DashboardAdmin = () => {
               <th>NAMA BARANG</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className='text-center'>
             {items.length > 0 ? (
               items.map((item, i) => (
                 <tr key={item.id || i}>
@@ -73,7 +73,7 @@ const DashboardAdmin = () => {
                 </tr>
               ))
             ) : (
-              <tr><td colSpan="3">Tidak ada data.</td></tr>
+              <tr><td colSpan="3" className="text-center">Tidak ada data.</td></tr>
             )}
           </tbody>
         </table>
@@ -87,23 +87,24 @@ const DashboardAdmin = () => {
       <div className="flex-grow-1 p-4">
         <h2>Dashboard Admin</h2>
         <p>Selamat Datang</p>
+
         <div className="row text-center mb-4">
           <div className="col-md-4">
-            <div className="card bg-light p-3">
-              <h6>Total Barang</h6>
-              <h2>{summary.totalBarang}</h2>
+            <div className="card bg-light p-3 h-100 d-flex justify-content-center align-items-center shadow-sm">
+              <h6 className="text-uppercase">Total Barang</h6>
+              <h1 className="fw-bold display-5 text-primary">{summary.totalBarang}</h1>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="card bg-success text-white p-3">
-              <h6>Barang Masuk Bulan Ini</h6>
-              <h2>{summary.barangMasuk}</h2>
+            <div className="card bg-light p-3 h-100 d-flex justify-content-center align-items-center shadow-sm">
+              <h6 className="text-uppercase">Barang Masuk Bulan Ini</h6>
+              <h1 className="fw-bold display-5 text-success">{summary.barangMasuk}</h1>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="card bg-danger text-white p-3">
-              <h6>Barang Keluar Bulan Ini</h6>
-              <h2>{summary.barangKeluar}</h2>
+            <div className="card bg-light p-3 h-100 d-flex justify-content-center align-items-center shadow-sm">
+              <h6 className="text-uppercase">Barang Keluar Bulan Ini</h6>
+              <h1 className="fw-bold display-5 text-danger">{summary.barangKeluar}</h1>
             </div>
           </div>
         </div>

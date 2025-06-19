@@ -41,7 +41,7 @@ const KelolaBarang = () => {
             console.error('Gagal mengambil data barang:', err);
             setBarang([]);
             setTotalPages(1);
-            setTotalData(0); // kosongkan juga
+            setTotalData(0); 
             setAlertMessage('Gagal memuat data barang.');
             setShowAlert(true);
         }
