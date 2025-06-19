@@ -16,7 +16,10 @@ const Sidebar = () => {
 
   return (
     <div className="bg-light p-3 vh-100" style={{ width: '220px' }}>
-      <h4 className="mb-4">Inventory Toko Laptop</h4>
+      <div className="text-center mb-4">
+        <img src="/logo-rimas.jpg" alt="Rimas Laptop" style={{ width: '100px', height: 'auto' }} />
+        <h6 className="mt-2">Inventory Toko Laptop</h6>
+      </div>
       <ul className="nav flex-column">
         {navItems.map((item) => (
           <li key={item.path} className="nav-item mb-2">
