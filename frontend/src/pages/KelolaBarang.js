@@ -24,7 +24,6 @@ const KelolaBarang = () => {
         limit,
       };
 
-      // Tentukan endpoint berdasarkan filter
       let endpoint = '/barang';
       if (filter === 'low') {
         endpoint = '/barang/stok-kurang';
