@@ -26,8 +26,6 @@ const LaporanInventori = () => {
     setPeriode(`${monthNames[parseInt(selectedBulan)]} ${selectedTahun}`);
 
     try {
-      // Pastikan URL ini cocok dengan rute di backend (laporanRoutes.js)
-      // Seharusnya: /api/laporan/preview/bulanan/:bulan/:tahun
       const response = await axios.get(`/laporan/preview/bulanan/${selectedBulan}/${selectedTahun}`);
       const data = response.data?.data || {};
 
@@ -139,7 +137,7 @@ const LaporanInventori = () => {
         <h5 className="text-uppercase fw-bold text-center">{title}</h5>
         <table className="table table-bordered">
           <thead className="text-center">
-            <tr>{/* No whitespace between th tags */}
+            <tr>
               <th>NO</th><th>KODE BARANG</th><th>NAMA BARANG</th><th>STOK</th><th>BATAS MINIMAL</th><th>BATAS MAKSIMAL</th><th>STATUS</th>
             </tr>
           </thead>

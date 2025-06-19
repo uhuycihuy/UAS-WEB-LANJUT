@@ -1,8 +1,8 @@
 // src/components/FormBarangKeluar.jsx
 import React, { useState, useEffect } from 'react';
-import axios from '../api/axiosInstance'; // Pastikan path ini benar
+import axios from '../api/axiosInstance'; 
 import { useNavigate, useParams } from 'react-router-dom'; // Import useParams untuk mengambil ID dari URL
-import Sidebar from './Sidebar'; // Asumsi komponen Sidebar ada di path ini
+import Sidebar from './Sidebar'; 
 
 const FormBarangKeluar = () => {
     const { id } = useParams(); // Mengambil ID barang dari URL (e.g., /barang-keluar/form/123 -> id = 123)
@@ -102,7 +102,7 @@ const FormBarangKeluar = () => {
             <Sidebar />
             <div className="flex-grow-1 p-4">
                 <h2>Keluar Barang: {barang.nama_barang} ({barang.kode_barang})</h2>
-                {error && <div className="alert alert-danger">{error}</div>} {/* Tampilkan alert error */}
+                {error && <div className="alert alert-danger">{error}</div>} 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label className="form-label">Nama Barang</label>

@@ -91,15 +91,18 @@ const FormEditBarang = () => {
 
           <div className="mb-3">
             <label htmlFor="satuan" className="form-label">Satuan</label>
-            <input
-              type="text"
-              className="form-control"
+            <select
+              className="form-select"
               id="satuan"
               name="satuan"
               value={formData.satuan}
               onChange={handleChange}
               required
-            />
+            >
+              <option value="Unit">Unit</option>
+              <option value="Pcs">Pcs</option>
+              <option value="Box">Box</option>
+            </select>
           </div>
 
           <div className="mb-3">

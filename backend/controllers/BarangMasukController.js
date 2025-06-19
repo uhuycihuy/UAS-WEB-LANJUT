@@ -118,7 +118,6 @@ export const getBarangMasukSummary = async (req, res) => {
     try {
         const { bulan, tahun } = req.params;
 
-        // Validasi parameter
         if (!bulan || !tahun) {
             return res.status(400).json({
                 success: false,
@@ -126,7 +125,6 @@ export const getBarangMasukSummary = async (req, res) => {
             });
         }
 
-        // Validasi format bulan (1-12)
         const bulanInt = parseInt(bulan);
         if (isNaN(bulanInt) || bulanInt < 1 || bulanInt > 12) {
             return res.status(400).json({
@@ -135,7 +133,6 @@ export const getBarangMasukSummary = async (req, res) => {
             });
         }
 
-        // Validasi format tahun
         const tahunInt = parseInt(tahun);
         if (isNaN(tahunInt) || tahunInt < 1900 || tahunInt > 2100) {
             return res.status(400).json({
@@ -144,7 +141,6 @@ export const getBarangMasukSummary = async (req, res) => {
             });
         }
 
-        // Buat whereClause dengan validasi yang lebih aman
         const bulanStr = bulanInt.toString().padStart(2, '0');
         const bulanBerikutnya = bulanInt === 12 ? 1 : bulanInt + 1;
         const tahunBerikutnya = bulanInt === 12 ? tahunInt + 1 : tahunInt;

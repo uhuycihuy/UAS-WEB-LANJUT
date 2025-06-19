@@ -8,9 +8,9 @@ const FormBarangMasuk = () => {
     const [formData, setFormData] = useState({
         nama_barang: '',
         jumlah_masuk: '',
-        satuan: 'Unit', // <-- KEMBALIKAN KE 'Unit' SEBAGAI NILAI DEFAULT
-        batas_minimal: '', // Tetap kosong
-        batas_maksimal: '', // Tetap kosong
+        satuan: 'Unit', 
+        batas_minimal: '', 
+        batas_maksimal: '', 
     });
     const navigate = useNavigate();
 
@@ -69,18 +69,20 @@ const FormBarangMasuk = () => {
                             required
                         />
                     </div>
-                    <div className="mb-3">
+                        <div className="mb-3">
                         <label htmlFor="satuan" className="form-label">Satuan</label>
-                        <input
-                            type="text"
-                            className="form-control"
+                        <select
+                            className="form-select"
                             id="satuan"
                             name="satuan"
-                            value={formData.satuan} // Nilai akan langsung 'Unit' dari state
+                            value={formData.satuan}
                             onChange={handleChange}
-                            placeholder="Contoh: Unit, Pcs, Box" // Placeholder tetap bisa ada untuk info
-                            required // Bisa tetap required atau tidak, tergantung kebutuhan Anda
-                        />
+                            required
+                        >
+                            <option value="Unit">Unit</option>
+                            <option value="Pcs">Pcs</option>
+                            <option value="Box">Box</option>
+                        </select>
                     </div>
                     <div className="mb-3">
                         <label htmlFor="jumlah_masuk" className="form-label">Jumlah Stok Awal</label>

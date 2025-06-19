@@ -105,7 +105,7 @@ const BarangMasuk = () => {
     // Data bulan untuk dropdown
     const months = [
         { value: '', label: '-- Pilih Bulan --' }, // Default: Tidak ada filter bulan
-        { value: 'all', label: 'Semua Bulan' },    // Backend Anda tidak menggunakan 'all' secara eksplisit, tapi ini bisa jadi opsi UX
+        { value: 'all', label: 'Semua Bulan' },    
         { value: '1', label: 'Januari' },
         { value: '2', label: 'Februari' },
         { value: '3', label: 'Maret' },

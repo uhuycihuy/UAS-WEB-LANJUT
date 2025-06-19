@@ -5,48 +5,50 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Form, Button, Pagination, Alert } from 'react-bootstrap';
 
 const KelolaBarang = () => {
-    const [barang, setBarang] = useState([]);
-    const [search, setSearch] = useState('');
-    const [filter, setFilter] = useState('all');
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalData, setTotalData] = useState(0); // ✅ Tambahkan ini
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
-    const navigate = useNavigate();
-    const limit = 10;
+  const [barang, setBarang] = useState([]);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const navigate = useNavigate();
+  const limit = 10;
 
-    const fetchBarang = useCallback(async () => {
-        try {
-            const params = {
-            search,
-            page,
-            limit
-            };
-            const res = await axios.get('/barang', { params });
-            const allData = res.data?.data || {};
-            let items = allData.barang || [];
+  const fetchBarang = useCallback(async () => {
+    try {
+      const params = {
+        search,
+        page,
+        limit,
+      };
 
-            if (filter === 'low') {
-            items = items.filter(item => item.stok < item.batas_minimal);
-            } else if (filter === 'high') {
-            items = items.filter(item => item.stok > item.batas_maksimal);
-            }
+      // Tentukan endpoint berdasarkan filter
+      let endpoint = '/barang';
+      if (filter === 'low') {
+        endpoint = '/barang/stok-kurang';
+      } else if (filter === 'high') {
+        endpoint = '/barang/stok-berlebih';
+      }
 
-            setBarang(items);
-            setTotalPages(allData.pagination?.totalPages || 1);
-            setTotalData(allData.pagination?.total || 0); // jangan lupa ini
-            setShowAlert(false);
-        } catch (err) {
-            console.error('Gagal mengambil data barang:', err);
-            setBarang([]);
-            setTotalPages(1);
-            setTotalData(0); 
-            setAlertMessage('Gagal memuat data barang.');
-            setShowAlert(true);
-        }
-    }, [search, page, filter]);
+      const res = await axios.get(endpoint, { params });
+      const allData = res.data?.data || {};
+      const items = allData.barang || [];
 
+      setBarang(items);
+      setTotalPages(allData.pagination?.totalPages || 1);
+      setTotalData(allData.pagination?.total || 0);
+      setShowAlert(false);
+    } catch (err) {
+      console.error('Gagal mengambil data barang:', err);
+      setBarang([]);
+      setTotalPages(1);
+      setTotalData(0);
+      setAlertMessage('Gagal memuat data barang.');
+      setShowAlert(true);
+    }
+  }, [search, page, filter]);
 
   useEffect(() => {
     fetchBarang();
@@ -139,7 +141,7 @@ const KelolaBarang = () => {
             ) : (
               barang.map((item, index) => (
                 <tr key={item.id} className="text-center">
-                  <td>{(page - 1) * 10 + index + 1}</td>
+                  <td>{(page - 1) * limit + index + 1}</td>
                   <td className="text-primary">{item.kode_barang}</td>
                   <td>{item.nama_barang}</td>
                   <td>{item.satuan}</td>

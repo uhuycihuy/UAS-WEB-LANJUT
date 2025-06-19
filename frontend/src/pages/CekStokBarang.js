@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from '../api/axiosInstance';
 import Sidebar from '../components/Sidebar';
 import { Table, Form, Pagination, Alert, Row, Col } from 'react-bootstrap';
@@ -15,7 +15,7 @@ const CekStokBarang = () => {
 
   const itemsPerPage = 10;
 
-  const fetchBarang = async () => {
+  const fetchBarang = useCallback(async () => {
     try {
       const params = {
         page: currentPage,
@@ -23,7 +23,14 @@ const CekStokBarang = () => {
         search
       };
 
-      const res = await axios.get('/barang', { params });
+      let endpoint = '/barang';
+      if (filter === 'low') {
+        endpoint = '/barang/stok-kurang';
+      } else if (filter === 'high') {
+        endpoint = '/barang/stok-berlebih';
+      }
+
+      const res = await axios.get(endpoint, { params });
       const result = res.data?.data || {};
 
       setBarang(result.barang || []);
@@ -38,11 +45,13 @@ const CekStokBarang = () => {
       setAlertMessage('Gagal mengambil data barang.');
       setShowAlert(true);
     }
-  };
+  }, [currentPage, search, filter, itemsPerPage]);
+
 
   useEffect(() => {
     fetchBarang();
-  }, [currentPage, search]); 
+  }, [fetchBarang]);
+
 
   const getStatusStok = (stok, min, max) => {
     if (stok < min) return 'Kurang';
@@ -59,17 +68,15 @@ const CekStokBarang = () => {
     }
   };
 
-  // Filter data di frontend berdasarkan status stok
-  const filteredBarang = barang.filter(item => {
-    const status = getStatusStok(item.stok, item.batas_minimal, item.batas_maksimal);
-    
-    if (filter === 'all') return true;
-    if (filter === 'low') return status === 'Kurang';
-    if (filter === 'high') return status === 'Berlebih';
-    if (filter === 'normal') return status === 'Normal';
-    
-    return true;
-  });
+  // Hanya lakukan filter di frontend untuk "normal"
+  const filteredBarang = filter === 'normal'
+    ? barang.filter(item => {
+        const stok = parseInt(item.stok) || 0;
+        const min = parseInt(item.batas_minimal) || 0;
+        const max = parseInt(item.batas_maksimal) || 0;
+        return stok >= min && stok <= max;
+      })
+    : barang;
 
   const renderPagination = () => {
     const items = [];

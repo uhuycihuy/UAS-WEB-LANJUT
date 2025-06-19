@@ -130,8 +130,7 @@ export const getBarangKeluarById = async (req, res) => {
 export const createBarangKeluar = async (req, res) => {
     try {
         const { barang_id, jumlah } = req.body; 
-        
-        // Validasi input
+     
         if (!barang_id || !jumlah) {
             return res.status(400).json({
                 success: false,
@@ -146,7 +145,6 @@ export const createBarangKeluar = async (req, res) => {
             });
         }
         
-        // Cek apakah barang ada
         const barang = await Barang.findOne({
             where: {
                 id: barang_id,
@@ -160,7 +158,6 @@ export const createBarangKeluar = async (req, res) => {
             });
         }
         
-        // Cek apakah stok mencukupi
         if (barang.stok < parseInt(jumlah)) {
             return res.status(400).json({
                 success: false,
@@ -168,24 +165,19 @@ export const createBarangKeluar = async (req, res) => {
             });
         }
         
-        // Set tanggal ke hari ini secara otomatis
         const tanggalKeluar = new Date();
         
-        // Format tanggal untuk timezone Indonesia (WIB)
         const tanggalKeluarWIB = new Date(tanggalKeluar.getTime() + (7 * 60 * 60 * 1000));
         
-        // Buat transaksi barang keluar
         const barangKeluar = await BarangKeluar.create({
             barang_id: parseInt(barang_id),
             jumlah: parseInt(jumlah),
             tanggal: tanggalKeluarWIB
         });
         
-        // Update stok barang
         const stokBaru = barang.stok - parseInt(jumlah);
         await barang.update({ stok: stokBaru });
         
-        // Ambil data lengkap untuk response
         const barangKeluarLengkap = await BarangKeluar.findByPk(barangKeluar.id, {
             include: [{
                 model: Barang,

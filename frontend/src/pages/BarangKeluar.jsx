@@ -38,7 +38,6 @@ const BarangKeluar = () => {
                 params.tahun = currentYear;
             }
 
-            // Endpoint backend Anda adalah 'http://localhost:3001/api/barang-keluar'
             const res = await axios.get('http://localhost:3001/api/barang-keluar', { params });
             
             const allData = res.data?.data || {};
@@ -106,7 +105,7 @@ const BarangKeluar = () => {
     // Data bulan untuk dropdown
     const months = [
         { value: '', label: '-- Pilih Bulan --' }, // Default: Tidak ada filter bulan
-        { value: 'all', label: 'Semua Bulan' },    // Backend Anda tidak menggunakan 'all' secara eksplisit, tapi ini bisa jadi opsi UX
+        { value: 'all', label: 'Semua Bulan' },    
         { value: '1', label: 'Januari' },
         { value: '2', label: 'Februari' },
         { value: '3', label: 'Maret' },
@@ -143,7 +142,7 @@ const BarangKeluar = () => {
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value);
-                                setPage(1); // Reset halaman saat mencari
+                                setPage(1); 
                             }}
                         />
                     </Col>

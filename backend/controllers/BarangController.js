@@ -28,7 +28,7 @@ export const getAllBarang = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const whereClause = {
-            is_deleted: false, // hanya ambil barang yang belum dihapus
+            is_deleted: false, 
             ...(search && {
                 [Op.or]: [
                     { nama_barang: { [Op.like]: `%${search}%` } },
@@ -108,7 +108,6 @@ export const createBarang = async (req, res) => {
             batas_minimal = 0, 
             batas_maksimal = 9999, 
             stok = 0,
-            // Parameter untuk barang masuk otomatis
             jumlah_masuk = 0
         } = req.body;
 
@@ -158,7 +157,6 @@ export const createBarang = async (req, res) => {
         // Otomatis buat barang masuk jika ada jumlah_masuk
         if (jumlah_masuk > 0) {
             try {
-                // Tanggal otomatis dengan jam lengkap
                 const tanggalMasukOtomatis = new Date();
                 
                 // Buat transaksi barang masuk otomatis
@@ -181,12 +179,10 @@ export const createBarang = async (req, res) => {
                     }]
                 });
             } catch (barangMasukError) {
-                // Jika gagal buat barang masuk, log error tapi tetap return barang yang sudah dibuat
                 console.error('Error creating auto barang masuk:', barangMasukError);
             }
         }
 
-        // Refresh data barang untuk mendapatkan stok terbaru
         await newBarang.reload();
 
         res.status(201).json({
@@ -284,7 +280,6 @@ export const deleteBarang = async (req, res) => {
             });
         }
 
-        // Soft delete: tandai barang sebagai sudah dihapus
         barang.is_deleted = true;
         await barang.save();
 
@@ -301,21 +296,18 @@ export const deleteBarang = async (req, res) => {
     }
 };
 
-// GET /api/barang/stok-kurang - Barang dengan stok kurang dari batas minimal (with pagination)
+// GET /api/barang/stok-kurang - Barang dengan stok kurang dari batas minimal 
 export const getBarangStokKurang = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '' } = req.query;
         const offset = (page - 1) * limit;
 
-        // Debug: Log untuk melihat proses
         console.log('=== DEBUG STOK KURANG ===');
-        
-        // Ambil semua barang terlebih dahulu, lalu filter di JavaScript
+
         let whereClause = {
             is_deleted: false
         };
-        
-        // Tambahkan search jika ada
+
         if (search) {
             whereClause = {
                 is_deleted: false,
@@ -326,15 +318,13 @@ export const getBarangStokKurang = async (req, res) => {
             };
         }
 
-        // Ambil semua data yang sesuai dengan search
         const allBarang = await Barang.findAll({
             where: whereClause,
             order: [['stok', 'ASC'], ['nama_barang', 'ASC']]
         });
 
         console.log('Total barang ditemukan:', allBarang.length);
-        
-        // Debug: Log beberapa data sample
+
         if (allBarang.length > 0) {
             console.log('Sample barang:', {
                 nama: allBarang[0].nama_barang,
@@ -345,14 +335,13 @@ export const getBarangStokKurang = async (req, res) => {
             });
         }
 
-        // Filter barang dengan stok kurang di JavaScript dengan parsing yang aman
         const barangStokKurang = allBarang.filter(barang => {
             const stok = parseInt(barang.stok) || 0;
             const batasMinimal = parseInt(barang.batas_minimal) || 0;
             const isStokKurang = stok < batasMinimal || stok === 0;
             
             // Debug log per item
-            if (allBarang.length <= 5) { // Hanya log jika data sedikit
+            if (allBarang.length <= 5) { 
                 console.log(`${barang.nama_barang}: stok=${stok}, min=${batasMinimal}, kurang=${isStokKurang}`);
             }
             
@@ -361,7 +350,6 @@ export const getBarangStokKurang = async (req, res) => {
 
         console.log('Barang dengan stok kurang:', barangStokKurang.length);
 
-        // Manual pagination
         const total = barangStokKurang.length;
         const startIndex = offset;
         const endIndex = startIndex + parseInt(limit);
@@ -394,21 +382,18 @@ export const getBarangStokKurang = async (req, res) => {
     }
 };
 
-// GET /api/barang/stok-berlebih - Barang dengan stok melebihi batas maksimal (with pagination)
+// GET /api/barang/stok-berlebih - Barang dengan stok melebihi batas maksimal 
 export const getBarangStokBerlebih = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '' } = req.query;
         const offset = (page - 1) * limit;
 
-        // Debug: Log untuk melihat proses
         console.log('=== DEBUG STOK BERLEBIH ===');
 
-        // Ambil semua barang terlebih dahulu, lalu filter di JavaScript
         let whereClause = {
             is_deleted: false
         };
         
-        // Tambahkan search jika ada
         if (search) {
             whereClause = {
                 is_deleted: false,
@@ -419,7 +404,6 @@ export const getBarangStokBerlebih = async (req, res) => {
             };
         }
 
-        // Ambil semua data yang sesuai dengan search
         const allBarang = await Barang.findAll({
             where: whereClause,
             order: [['stok', 'DESC'], ['nama_barang', 'ASC']]
@@ -427,14 +411,13 @@ export const getBarangStokBerlebih = async (req, res) => {
 
         console.log('Total barang ditemukan:', allBarang.length);
 
-        // Filter barang dengan stok berlebih di JavaScript dengan parsing yang aman
         const barangStokBerlebih = allBarang.filter(barang => {
             const stok = parseInt(barang.stok) || 0;
             const batasMaksimal = parseInt(barang.batas_maksimal) || 0;
             const isStokBerlebih = stok > batasMaksimal;
             
             // Debug log per item
-            if (allBarang.length <= 5) { // Hanya log jika data sedikit
+            if (allBarang.length <= 5) {
                 console.log(`${barang.nama_barang}: stok=${stok}, max=${batasMaksimal}, berlebih=${isStokBerlebih}`);
             }
             
@@ -443,7 +426,6 @@ export const getBarangStokBerlebih = async (req, res) => {
 
         console.log('Barang dengan stok berlebih:', barangStokBerlebih.length);
 
-        // Manual pagination
         const total = barangStokBerlebih.length;
         const startIndex = offset;
         const endIndex = startIndex + parseInt(limit);
@@ -476,8 +458,7 @@ export const getBarangStokBerlebih = async (req, res) => {
     }
 };
 
-
-// GET /api/barang/summary - Ringkasan data barang (FIXED VERSION)
+// GET /api/barang/summary - Ringkasan data barang
 export const getBarangSummary = async (req, res) => {
     try {
         console.log('=== DEBUG SUMMARY ===');
@@ -492,7 +473,6 @@ export const getBarangSummary = async (req, res) => {
         console.log('Total barang:', totalBarang);
         console.log('Total stok:', totalStok);
         
-        // Ambil semua data dan filter di JavaScript untuk akurasi
         const allBarang = await Barang.findAll({
             where: {is_deleted: false},
             attributes: ['id', 'stok', 'batas_minimal', 'batas_maksimal']
