@@ -1,28 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../api/axiosInstance';
 import Sidebar from '../components/Sidebar';
+import { Table, Form, Pagination, Alert } from 'react-bootstrap';
 
 const CekStokBarang = () => {
   const [barang, setBarang] = useState([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [totalData, setTotalData] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
-  useEffect(() => {
-    fetchBarang();
-  }, []);
+  const itemsPerPage = 10;
 
   const fetchBarang = async () => {
     try {
-      const res = await axios.get('/barang');
-      const dataArray = res.data?.data?.barang || [];
-      setBarang(dataArray);
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        search,
+        filter
+      };
+
+      const res = await axios.get('/barang', { params });
+      const result = res.data?.data || {};
+
+      setBarang(result.barang || []);
+      setTotalPages(result.pagination?.totalPages || 1);
+      setTotalData(result.pagination?.total || 0);
+      setShowAlert(false);
     } catch (err) {
       console.error('Gagal mengambil data barang:', err);
       setBarang([]);
+      setTotalPages(1);
+      setTotalData(0);
+      setAlertMessage('Gagal mengambil data barang.');
+      setShowAlert(true);
     }
   };
+
+  useEffect(() => {
+    fetchBarang();
+  }, [currentPage, search, filter]);
 
   const getStatusStok = (stok, min, max) => {
     if (stok < min) return 'Kurang';
@@ -32,89 +53,71 @@ const CekStokBarang = () => {
 
   const getStatusClass = (status) => {
     switch (status) {
-      case 'Kurang':
-        return 'badge bg-danger';
-      case 'Berlebih':
-        return 'badge bg-warning text-dark';
-      case 'Normal':
-        return 'badge bg-success';
-      default:
-        return 'badge bg-secondary';
+      case 'Kurang': return 'badge bg-danger';
+      case 'Berlebih': return 'badge bg-warning text-dark';
+      case 'Normal': return 'badge bg-success';
+      default: return 'badge bg-secondary';
     }
   };
 
-  const filteredData = barang.filter(item => {
-    const matchSearch =
-      item.nama_barang.toLowerCase().includes(search.toLowerCase()) ||
-      item.kode_barang.toLowerCase().includes(search.toLowerCase());
-
-    const status = getStatusStok(item.stok, item.batas_minimal, item.batas_maksimal);
-    const matchFilter =
-      filter === 'all' ||
-      (filter === 'low' && status === 'Kurang') ||
-      (filter === 'high' && status === 'Berlebih') ||
-      (filter === 'normal' && status === 'Normal');
-
-    return matchSearch && matchFilter;
-  });
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
   const renderPagination = () => {
-    const pages = [];
+    const items = [];
     for (let i = 1; i <= totalPages; i++) {
-      pages.push(
-        <button
+      items.push(
+        <Pagination.Item
           key={i}
-          className={`btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-outline-primary'} mx-1`}
+          active={i === currentPage}
           onClick={() => setCurrentPage(i)}
         >
           {i}
-        </button>
+        </Pagination.Item>
       );
     }
-    return pages;
+    return items;
   };
 
   return (
     <div className="d-flex">
       <Sidebar />
-      <div className="flex-grow-1 p-4">
-        <h2 className="mb-4">Cek Stok Barang</h2>
+      <div className="container mt-4">
+        <h4 className="fw-bold">Cek Stok Barang</h4>
+        <p>Filter dan pantau status stok barang</p>
 
-        <div className="d-flex gap-2 flex-wrap mb-4">
-          <input
+        <div className="d-flex gap-2 flex-wrap mb-3">
+          <Form.Control
             type="text"
-            className="form-control"
-            style={{ maxWidth: '500px' }}
             placeholder="Cari berdasarkan nama atau kode barang..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
+            style={{ maxWidth: '400px' }}
           />
-          <select
-            className="form-select w-auto"
+          <Form.Select
             value={filter}
             onChange={(e) => {
               setFilter(e.target.value);
               setCurrentPage(1);
             }}
+            style={{ width: '180px' }}
           >
             <option value="all">Semua Stok</option>
             <option value="low">Stok Kurang</option>
             <option value="high">Stok Berlebih</option>
             <option value="normal">Stok Normal</option>
-          </select>
+          </Form.Select>
         </div>
 
+        {showAlert && (
+          <Alert variant="warning" onClose={() => setShowAlert(false)} dismissible>
+            {alertMessage}
+          </Alert>
+        )}
+
         <div className="table-responsive">
-          <table className="table table-bordered table-hover table-striped mb-0">
-            <thead className="table-light text-center">
+          <Table bordered striped hover>
+            <thead className="text-center table-light">
               <tr>
                 <th>NO</th>
                 <th>KODE</th>
@@ -127,35 +130,32 @@ const CekStokBarang = () => {
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((item, i) => {
-                const status = getStatusStok(item.stok, item.batas_minimal, item.batas_maksimal);
-                return (
-                  <tr key={item.id}>
-                    <td>{indexOfFirstItem + i + 1}</td>
-                    <td className="text-primary">{item.kode_barang}</td>
-                    <td>{item.nama_barang}</td>
-                    <td>{item.satuan}</td>
-                    <td><strong>{item.stok}</strong></td>
-                    <td>{item.batas_minimal}</td>
-                    <td>{item.batas_maksimal}</td>
-                    <td>
-                      <span className={getStatusClass(status)}>{status}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-              {currentItems.length === 0 && (
-                <tr>
-                  <td colSpan="8" className="text-center">Tidak ada data.</td>
-                </tr>
+              {barang.length === 0 ? (
+                <tr><td colSpan="8" className="text-center">Tidak ada data.</td></tr>
+              ) : (
+                barang.map((item, index) => {
+                  const status = getStatusStok(item.stok, item.batas_minimal, item.batas_maksimal);
+                  return (
+                    <tr key={item.id}>
+                      <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                      <td className="text-primary">{item.kode_barang}</td>
+                      <td>{item.nama_barang}</td>
+                      <td>{item.satuan}</td>
+                      <td><strong>{item.stok}</strong></td>
+                      <td>{item.batas_minimal}</td>
+                      <td>{item.batas_maksimal}</td>
+                      <td><span className={getStatusClass(status)}>{status}</span></td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
-          </table>
+          </Table>
+        </div>
 
-          <div className="d-flex justify-content-between align-items-center mt-3">
-            <small>Menampilkan {currentItems.length} dari {filteredData.length} data</small>
-            <div>{renderPagination()}</div>
-          </div>
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <small>Menampilkan {Math.min(currentPage * itemsPerPage, totalData)} dari {totalData} data</small>
+          <Pagination>{renderPagination()}</Pagination>
         </div>
       </div>
     </div>
