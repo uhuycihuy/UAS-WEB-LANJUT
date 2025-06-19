@@ -153,7 +153,7 @@ const CekStokBarang = () => {
           </Table>
         </div>
 
-        <div className="d-flex justify-content-between align-items-center mt-3">
+        <div className="d-flex justify-content-between">
           <small>Menampilkan {Math.min(currentPage * itemsPerPage, totalData)} dari {totalData} data</small>
           <Pagination>{renderPagination()}</Pagination>
         </div>
