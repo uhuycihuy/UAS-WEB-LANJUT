@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from '../api/axiosInstance';
 import Sidebar from '../components/Sidebar';
 
@@ -17,15 +17,21 @@ const LaporanInventori = () => {
   const [periode, setPeriode] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    setPeriode(`${selectedBulan}/${selectedTahun}`);
+    const monthNames = [
+        "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    setPeriode(`${monthNames[parseInt(selectedBulan)]} ${selectedTahun}`);
 
     try {
-      const response = await axios.get(`/laporan/bulanan/${selectedBulan}/${selectedTahun}`);
+      // Pastikan URL ini cocok dengan rute di backend (laporanRoutes.js)
+      // Seharusnya: /api/laporan/preview/bulanan/:bulan/:tahun
+      const response = await axios.get(`/laporan/preview/bulanan/${selectedBulan}/${selectedTahun}`);
       const data = response.data?.data || {};
 
-      console.log("RESPON DATA LAPORAN:", data);
+      console.log("RESPON DATA LAPORAN FRONTEND:", data);
 
       setSummary({
         totalBarang: data.totalBarang || 0,
@@ -49,11 +55,11 @@ const LaporanInventori = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBulan, selectedTahun]);
 
   useEffect(() => {
     fetchData();
-  }, [selectedBulan, selectedTahun]);
+  }, [fetchData]);
 
   const handleDownloadPDF = async () => {
     try {
@@ -65,7 +71,7 @@ const LaporanInventori = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `laporan_inventory_${selectedBulan}_${selectedTahun}.pdf`);
+      link.setAttribute('download', `laporan_inventory_bulanan_${selectedBulan}_${selectedTahun}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -80,13 +86,8 @@ const LaporanInventori = () => {
       <h5 className="text-uppercase fw-bold">{title}</h5>
       <table className="table table-bordered">
         <thead className="text-center">
-          <tr>
-            <th>NO</th>
-            <th>KODE</th>
-            <th>NAMA BARANG</th>
-            <th>JUMLAH</th>
-            <th>SATUAN</th>
-            <th>TANGGAL</th>
+          <tr>{/* No whitespace between th tags */}
+            <th>NO</th><th>KODE BARANG</th><th>NAMA BARANG</th><th>SATUAN</th><th>JUMLAH</th><th>TANGGAL & WAKTU</th>
           </tr>
         </thead>
         <tbody>
@@ -94,17 +95,17 @@ const LaporanInventori = () => {
             items.map((item, index) => (
               <tr key={item.id || index}>
                 <td>{index + 1}</td>
-                <td>{item.kode_barang}</td>
+                <td style={{ color: '#1E40AF' }}>{item.kode_barang}</td>
                 <td>{item.nama_barang}</td>
-                <td>{item.jumlah}</td>
                 <td>{item.satuan}</td>
+                <td>{item.jumlah}</td>
                 <td>{item.tanggal || '-'}</td>
               </tr>
             ))
           ) : (
             <tr>
               <td colSpan="6" className="text-center">
-                {loading ? 'Loading...' : 'Tidak ada data'}
+                {loading ? 'Memuat...' : 'Tidak ada data'}
               </td>
             </tr>
           )}
@@ -119,27 +120,54 @@ const LaporanInventori = () => {
       <h5 className="text-uppercase fw-bold">{title}</h5>
       <table className="table table-bordered">
         <thead className="text-center">
-          <tr>
-            <th>NO</th>
-            <th>KODE</th>
-            <th>NAMA BARANG</th>
-            <th>STOK</th>
+          <tr>{/* No whitespace between th tags */}
+            <th>NO</th><th>KODE BARANG</th><th>NAMA BARANG</th><th>STOK</th><th>BATAS MINIMAL</th><th>BATAS MAKSIMAL</th><th>STATUS</th>
           </tr>
         </thead>
         <tbody>
           {items.length > 0 ? (
-            items.map((item, index) => (
-              <tr key={item.id || index}>
-                <td>{index + 1}</td>
-                <td>{item.kode_barang}</td>
-                <td>{item.nama_barang}</td>
-                <td>{item.stok}</td>
-              </tr>
-            ))
+            items.map((item, index) => {
+                let statusColor = '#000000';
+                let statusBgColor = '#FFFFFF';
+                if (item.status === 'Kurang' || item.status === 'Habis') {
+                    statusColor = '#721C24';
+                    statusBgColor = '#F8D7DA';
+                } else if (item.status === 'Berlebih') {
+                    statusColor = '#856404';
+                    statusBgColor = '#FFF3CD';
+                } else if (item.status === 'Aman') {
+                    statusColor = '#155724';
+                    statusBgColor = '#D4EDDA';
+                }
+
+                const capsuleStyle = {
+                    display: 'inline-block',
+                    padding: '3px 8px',
+                    borderRadius: '15px',
+                    backgroundColor: statusBgColor,
+                    color: statusColor,
+                    fontWeight: 'bold',
+                    fontSize: '0.8em'
+                };
+
+                return (
+                    <tr key={item.id || index}>
+                        <td>{index + 1}</td>
+                        <td style={{ color: '#1E40AF' }}>{item.kode_barang}</td>
+                        <td>{item.nama_barang}</td>
+                        <td>{item.stok}</td>
+                        <td>{item.batas_minimal !== undefined ? item.batas_minimal : '-'}</td>
+                        <td>{item.batas_maksimal !== undefined ? item.batas_maksimal : '-'}</td>
+                        <td>
+                            <span style={capsuleStyle}>{item.status}</span>
+                        </td>
+                    </tr>
+                );
+            })
           ) : (
             <tr>
-              <td colSpan="4" className="text-center">
-                {loading ? 'Loading...' : 'Tidak ada data'}
+              <td colSpan="7" className="text-center">
+                {loading ? 'Memuat...' : 'Tidak ada data'}
               </td>
             </tr>
           )}
@@ -155,12 +183,11 @@ const LaporanInventori = () => {
       <div className="flex-grow-1 p-4">
         <h2 className="text-center">LAPORAN INVENTORY BULANAN</h2>
 
-        {/* Form Pilih Periode */}
         <div className="row mb-3 justify-content-center">
           <div className="col-md-3">
-            <select 
-              className="form-select" 
-              value={selectedBulan} 
+            <select
+              className="form-select"
+              value={selectedBulan}
               onChange={(e) => setSelectedBulan(e.target.value)}
               disabled={loading}
             >
@@ -186,12 +213,12 @@ const LaporanInventori = () => {
             />
           </div>
           <div className="col-md-3">
-            <button 
-              className="btn btn-info w-100" 
+            <button
+              className="btn btn-info w-100"
               onClick={fetchData}
               disabled={loading}
             >
-              {loading ? 'Loading...' : 'Lihat Laporan'}
+              {loading ? 'Memuat...' : 'Lihat Laporan'}
             </button>
           </div>
         </div>
@@ -201,16 +228,15 @@ const LaporanInventori = () => {
         )}
 
         <div className="text-center mb-4">
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             onClick={handleDownloadPDF}
             disabled={loading}
           >
-            Download PDF
+            Unduh PDF
           </button>
         </div>
 
-        {/* Ringkasan */}
         <div className="row mb-5 text-center">
           <div className="col-md-6">
             <div className="card p-3">
@@ -226,7 +252,6 @@ const LaporanInventori = () => {
           </div>
         </div>
 
-        {/* Tabel Data */}
         {renderTable("Barang Masuk", summary.barangMasuk)}
         {renderTable("Barang Keluar", summary.barangKeluar)}
         {renderSimpleTable("Barang Berlebih", summary.stokBerlebih)}
