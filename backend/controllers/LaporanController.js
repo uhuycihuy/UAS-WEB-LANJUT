@@ -45,12 +45,60 @@ export const generateLaporanBulananPreview = async (req, res) => {
         const endDate = new Date(tahunInt, bulanInt, 0);
 
         // --- 1. Laporan Keseluruhan ---
-        const totalBarang = await Barang.count({ where: { is_deleted: false } });
-        const totalStok = await Barang.sum('stok', { where: { is_deleted: false } });
+        const totalBarang = await BarangMasuk.count({
+            where: {
+                tanggal: { [Op.gte]: startDate, [Op.lte]: endDate }
+            },
+            include: [{
+                model: Barang,
+                as: 'barang',
+                where: { is_deleted: false },
+                required: true
+            }]
+        });
+
+        // --- Perhitungan Total Stok Berdasarkan Barang Masuk & Keluar Sampai Tanggal Tertentu ---
+        const barangMasukSampaiBulan = await BarangMasuk.findAll({
+            where: { tanggal: { [Op.lte]: endDate } },
+            include: [{
+                model: Barang,
+                as: 'barang',
+                where: { is_deleted: false },
+                required: true,
+            }]
+        });
+
+        const barangKeluarSampaiBulan = await BarangKeluar.findAll({
+            where: { tanggal: { [Op.lte]: endDate } },
+            include: [{
+                model: Barang,
+                as: 'barang',
+                where: { is_deleted: false },
+                required: true,
+            }]
+        });
+
+        // hitung stok per barang
+        const stokPerBarang = {};
+
+        barangMasukSampaiBulan.forEach(item => {
+            const id = item.barang_id;
+            stokPerBarang[id] = (stokPerBarang[id] || 0) + item.jumlah;
+        });
+
+        barangKeluarSampaiBulan.forEach(item => {
+            const id = item.barang_id;
+            stokPerBarang[id] = (stokPerBarang[id] || 0) - item.jumlah;
+        });
+
+        // hitung total stok dari semua barang
+        const totalStok = Object.values(stokPerBarang).reduce((a, b) => a + b, 0);
 
         // --- 2. Barang Masuk Data ---
         const barangMasukRecords = await BarangMasuk.findAll({
-            where: { tanggal: { [Op.gte]: startDate, [Op.lte]: endDate } },
+            where: {
+                tanggal: { [Op.gte]: startDate, [Op.lte]: endDate }
+            },
             include: [{
                 model: Barang,
                 as: 'barang',
@@ -62,9 +110,9 @@ export const generateLaporanBulananPreview = async (req, res) => {
         });
 
         const barangMasukFormatted = barangMasukRecords.map(item => ({
-            id: item.id, 
+            id: item.id,
             jumlah: item.jumlah,
-            tanggal: formatDate(item.tanggal), 
+            tanggal: formatDate(item.tanggal),
             kode_barang: item.barang.kode_barang,
             nama_barang: item.barang.nama_barang,
             satuan: item.barang.satuan,
@@ -73,7 +121,9 @@ export const generateLaporanBulananPreview = async (req, res) => {
 
         // --- 3. Barang Keluar Data ---
         const barangKeluarRecords = await BarangKeluar.findAll({
-            where: { tanggal: { [Op.gte]: startDate, [Op.lte]: endDate } },
+            where: {
+                tanggal: { [Op.gte]: startDate, [Op.lte]: endDate }
+            },
             include: [{
                 model: Barang,
                 as: 'barang',
@@ -85,7 +135,7 @@ export const generateLaporanBulananPreview = async (req, res) => {
         });
 
         const barangKeluarFormatted = barangKeluarRecords.map(item => ({
-            id: item.id, 
+            id: item.id,
             jumlah: item.jumlah,
             tanggal: formatDate(item.tanggal),
             kode_barang: item.barang.kode_barang,
@@ -94,11 +144,19 @@ export const generateLaporanBulananPreview = async (req, res) => {
             batas_maksimal: item.barang.batas_maksimal
         }));
 
-        // --- 4. Barang Berlebih Stok & 5. Barang Kurang Stok ---
+        // --- 4 & 5. Barang Berlebih dan Kurang Stok (hanya yang berubah stok di bulan tersebut) ---
+        const barangIdsChanged = new Set([
+            ...barangMasukRecords.map(b => b.barang_id),
+            ...barangKeluarRecords.map(b => b.barang_id),
+        ]);
+
         const allBarangForStockCheck = await Barang.findAll({
-            where: { is_deleted: false },
+            where: {
+                is_deleted: false,
+                id: [...barangIdsChanged]
+            },
             order: [['nama_barang', 'ASC']],
-            attributes: ['id', 'kode_barang', 'nama_barang', 'satuan', 'stok', 'batas_minimal', 'batas_maksimal'] // Explicitly select attributes
+            attributes: ['id', 'kode_barang', 'nama_barang', 'satuan', 'stok', 'batas_minimal', 'batas_maksimal']
         });
 
         const stokBerlebih = [];
@@ -133,8 +191,7 @@ export const generateLaporanBulananPreview = async (req, res) => {
                 });
             }
         });
-        
-        // Mengembalikan data JSON untuk frontend 
+
         res.status(200).json({
             success: true,
             message: "Data laporan bulanan berhasil diambil",
@@ -142,8 +199,8 @@ export const generateLaporanBulananPreview = async (req, res) => {
                 periode: periodeString,
                 totalBarang: totalBarang || 0,
                 totalStok: totalStok || 0,
-                barangMasuk: barangMasukFormatted, 
-                barangKeluar: barangKeluarFormatted, 
+                barangMasuk: barangMasukFormatted,
+                barangKeluar: barangKeluarFormatted,
                 stokBerlebih: stokBerlebih,
                 stokKurang: stokKurang
             }
@@ -158,7 +215,6 @@ export const generateLaporanBulananPreview = async (req, res) => {
         });
     }
 };
-
 
 /**
  * 
@@ -189,13 +245,55 @@ export const generateLaporanBulanan = async (req, res) => {
         const startDate = new Date(tahunInt, bulanInt - 1, 1);
         const endDate = new Date(tahunInt, bulanInt, 0);
 
-        // --- 1. Laporan Keseluruhan ---
-        const totalBarang = await Barang.count({
-            where: { is_deleted: false }
+        // --- 1. Laporan Keseluruhan (Updated Logic) ---
+        const totalBarang = await BarangMasuk.count({
+            where: {
+                tanggal: { [Op.gte]: startDate, [Op.lte]: endDate }
+            },
+            include: [{
+                model: Barang,
+                as: 'barang',
+                where: { is_deleted: false },
+                required: true
+            }]
         });
-        const totalStok = await Barang.sum('stok', {
-            where: { is_deleted: false }
+
+        // --- Perhitungan Total Stok Berdasarkan Barang Masuk & Keluar Sampai Tanggal Tertentu ---
+        const barangMasukSampaiBulan = await BarangMasuk.findAll({
+            where: { tanggal: { [Op.lte]: endDate } },
+            include: [{
+                model: Barang,
+                as: 'barang',
+                where: { is_deleted: false },
+                required: true,
+            }]
         });
+
+        const barangKeluarSampaiBulan = await BarangKeluar.findAll({
+            where: { tanggal: { [Op.lte]: endDate } },
+            include: [{
+                model: Barang,
+                as: 'barang',
+                where: { is_deleted: false },
+                required: true,
+            }]
+        });
+
+        // hitung stok per barang
+        const stokPerBarang = {};
+
+        barangMasukSampaiBulan.forEach(item => {
+            const id = item.barang_id;
+            stokPerBarang[id] = (stokPerBarang[id] || 0) + item.jumlah;
+        });
+
+        barangKeluarSampaiBulan.forEach(item => {
+            const id = item.barang_id;
+            stokPerBarang[id] = (stokPerBarang[id] || 0) - item.jumlah;
+        });
+
+        // hitung total stok dari semua barang
+        const totalStok = Object.values(stokPerBarang).reduce((a, b) => a + b, 0);
 
         const overallSummaryData = [
             { label: 'Total Barang', value: totalBarang ? totalBarang.toString() : '0' },
@@ -262,12 +360,22 @@ export const generateLaporanBulanan = async (req, res) => {
             item.barang.batas_maksimal.toString(),
         ]);
 
-        // --- 4. Barang Berlebih Stok ---
+        // --- 4 & 5. Barang Berlebih dan Kurang Stok (Updated Logic) ---
+        const barangIdsChanged = new Set([
+            ...barangMasukRecords.map(b => b.barang_id),
+            ...barangKeluarRecords.map(b => b.barang_id),
+        ]);
+
         const allBarangForStockCheck = await Barang.findAll({
-            where: { is_deleted: false },
-            order: [['nama_barang', 'ASC']]
+            where: {
+                is_deleted: false,
+                id: [...barangIdsChanged]
+            },
+            order: [['nama_barang', 'ASC']],
+            attributes: ['id', 'kode_barang', 'nama_barang', 'satuan', 'stok', 'batas_minimal', 'batas_maksimal']
         });
 
+        // Filter untuk barang berlebih stok
         const barangStokBerlebihRecords = allBarangForStockCheck.filter(barang => {
             const stok = parseInt(barang.stok) || 0;
             const batasMaksimal = parseInt(barang.batas_maksimal) || 0;
@@ -287,7 +395,7 @@ export const generateLaporanBulanan = async (req, res) => {
             "Berlebih"
         ]);
 
-        // --- 5. Barang Kurang Stok ---
+        // Filter untuk barang kurang stok
         const barangStokKurangRecords = allBarangForStockCheck.filter(barang => {
             const stok = parseInt(barang.stok) || 0;
             const batasMinimal = parseInt(barang.batas_minimal) || 0;
@@ -304,9 +412,8 @@ export const generateLaporanBulanan = async (req, res) => {
             barang.stok.toString(),
             barang.batas_minimal.toString(),
             barang.batas_maksimal.toString(),
-            "Kurang"
+            barang.stok === 0 ? "Habis" : "Kurang"
         ]);
-
 
         // --- Untuk Generate PDF ---
         const reportSections = [
