@@ -79,7 +79,6 @@ const LaporanInventori = () => {
     }
   };
 
-  // Fungsi untuk menghitung total jumlah/stok
   const calculateTotalJumlah = (items) => {
     return items.reduce((total, item) => total + (parseInt(item.jumlah) || 0), 0);
   };
