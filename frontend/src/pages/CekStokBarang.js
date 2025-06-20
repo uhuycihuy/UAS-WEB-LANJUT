@@ -68,7 +68,6 @@ const CekStokBarang = () => {
     }
   };
 
-  // Hanya lakukan filter di frontend untuk "normal"
   const filteredBarang = filter === 'normal'
     ? barang.filter(item => {
         const stok = parseInt(item.stok) || 0;
